@@ -1,0 +1,8 @@
+{
+    "request_duration_secs" : 1,
+    "client_id": "ndip",
+    "client_secret":"ZLrwMJePHNqDbHzZOLwdQrHjaByI4mhK",
+    "introspection_url": "http://host.docker.internal:8080/realms/NDIP/protocol/openid-connect/token/introspect"
+}
+
+   
