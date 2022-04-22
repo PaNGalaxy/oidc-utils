@@ -1,20 +1,21 @@
 
-#2FA
+# 2FA
 
-##links
-https://goteleport.com/blog/ssh-2fa-tutorial/
-https://github.com/google/google-authenticator-libpam
+## Links
 
-##getting secrets/link to a QR code for Google Authenticator
+* https://goteleport.com/blog/ssh-2fa-tutorial/
+* https://github.com/google/google-authenticator-libpam
+
+## Getting secrets/link to a QR code for Google Authenticator
 ```
 docker run --entrypoint="" ubuntu_sshd_2fa cat /home/test/auth_secrets
 ```
 
-#PAM module in Python
+# PAM module in Python
 
 https://developers.onelogin.com/authentication/tools/linux-ssh-pam-module
 
-#keycloak
+# Keycloak
 
 get token
 
