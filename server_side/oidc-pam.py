@@ -3,13 +3,12 @@
 # based on https://developers.onelogin.com/authentication/tools/linux-ssh-pam-module
 
 '''
-PAM module for authenticating users via a onelogin email/username and OTP
+PAM module for authenticating users via a OIDC token
 '''
 import json
 import os
 import sys
 import syslog
-import time
 import requests
 
 def logit(data):
@@ -22,38 +21,6 @@ def logit(data):
     data_str = str(data)
     sys.stderr.write('%s\n' % data_str)
     syslog.syslog(syslog.LOG_ERR, data_str)
-
-class UniformTimer:
-    '''
-    This class is used to make sections of code run in a uniform time.
-    '''
-    def __init__(self, base_duration_secs):
-        '''
-        Constructor (doesn't start timing)
-        Args:
-            base_duration_secs (float): Default timer value
-        '''
-        self.base_duration_secs = base_duration_secs
-        self.timer = 0
- 
-    def start(self, duration_secs=None):
-        '''
-        Start timer (non-blocking)
-        Args:
-            duration_secs (float|None): Override the default timer value
-                                        with this value (optional).
-        '''
-        if duration_secs is None:
-            duration_secs = self.base_duration_secs
-        self.timer = time.time() + duration_secs
- 
-    def finish(self):
-        '''
-        Waits for timer to expire (blocking)
-        Args:
-            None
-        '''
-        time.sleep(max(0, self.timer - time.time()))
 
 def pam_sm_setcred(pamh, _flags, _argv):
     '''
@@ -88,7 +55,7 @@ def pam_sm_chauthtok(pamh, _flags, _argv):
 
 def pam_sm_authenticate(pamh, _flags, _argv):
     '''
-    Authenticates a user via onelogin email/username and OTP
+    Authenticates a user via an OIDC token
     '''
     # Load config file and build access token
     try:
@@ -121,10 +88,8 @@ def pam_sm_authenticate(pamh, _flags, _argv):
     except pamh.exception as error:
         return error.pam_result
 
-    # check user same as in token
-    uniform_timer = UniformTimer(config['request_duration_secs'])
+    # todo: check user same as in token
     try:
-        uniform_timer.start()
         url = config['introspection_url']
         logit(access_token)
         data = {'token': access_token.strip(),'client_id': config['client_id'], 'client_secret':config['client_secret']}
@@ -137,7 +102,6 @@ def pam_sm_authenticate(pamh, _flags, _argv):
             logit('Error checking introspecting token, token %s invalid, server response: %s' %(access_token, response.text))
             return pamh.PAM_AUTH_ERR            
         logit(response.json())
-        uniform_timer.finish()
     except Exception as error:
         logit('Error introspecting token %s, error: %s' % (access_token,error))
         return pamh.PAM_AUTH_ERR

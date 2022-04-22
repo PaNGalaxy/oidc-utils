@@ -1,4 +1,3 @@
-
 # 2FA
 
 ## Links
@@ -15,7 +14,7 @@ docker run --entrypoint="" ubuntu_sshd_2fa cat /home/test/auth_secrets
 
 https://developers.onelogin.com/authentication/tools/linux-ssh-pam-module
 
-# Keycloak
+# Keycloak (just for manual tests, now in code)
 
 get token
 
