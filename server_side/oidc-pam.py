@@ -8,8 +8,11 @@ PAM module for authenticating users via a OIDC token
 import json
 import os
 import sys
-import syslog
+import logging
 import requests
+
+
+
 
 def logit(data):
     '''
@@ -18,9 +21,10 @@ def logit(data):
         data (*): Data to log
     Returns: None
     '''
+    logging.basicConfig(filename='/tmp/pam.log', encoding='utf-8', level=logging.DEBUG)
     data_str = str(data)
     sys.stderr.write('%s\n' % data_str)
-    syslog.syslog(syslog.LOG_ERR, data_str)
+    logging.debug(data_str)
 
 def pam_sm_setcred(pamh, _flags, _argv):
     '''

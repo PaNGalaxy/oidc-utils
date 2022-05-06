@@ -7,7 +7,7 @@ RUN pip2 config set global.target /lib/python2.7 && pip2 install requests
 RUN useradd test
 RUN mkhomedir_helper test
 RUN echo test:123 | chpasswd
-
+RUN mkdir /run/sshd
 
 COPY oidc-pam.py  /etc/securuty/oidc/oidc-pam.py
 COPY oidc-pam.json  /etc/securuty/oidc/oidc-pam.json
@@ -15,7 +15,7 @@ COPY sshd /etc/pam.d/
 COPY sshd_pam.conf /etc/ssh/sshd_config.d/
 
 EXPOSE 22
-ENTRYPOINT service ssh restart && bash
+ENTRYPOINT /usr/sbin/sshd -D
 
 
 #2FA
