@@ -22,3 +22,5 @@ docker-build:
         - docker build -f server_side/Dockerfile -t $2FA_URL/$CI_COMMIT_REF_NAME:latest --target with2fa ./server_side 
         - docker push $NO2FA_URL/$CI_COMMIT_REF_NAME:latest
         - docker push $2FA_URL/$CI_COMMIT_REF_NAME:latest
+    tags:
+        - rse-multi-builder
