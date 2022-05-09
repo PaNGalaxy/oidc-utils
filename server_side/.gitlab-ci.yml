@@ -15,12 +15,20 @@ after_script:
     - sudo chown -R gitlab-runner .
 
 docker-build:
+    variables:
+        IMAGE_PREFIX: "/$CI_COMMIT_REF_NAME"
+    rules:
+        - if: $CI_COMMIT_REF_NAME == 'master'
+          variables:
+            IMAGE_PREFIX: ""
     stage: build
     script:
         - docker login --username=$CI_REGISTRY_USER --password=$CI_REGISTRY_PASSWORD $CI_REGISTRY
-        - docker build -f server_side/Dockerfile -t $NO2FA_URL/$CI_COMMIT_REF_NAME:latest --target no2fa ./server_side
-        - docker build -f server_side/Dockerfile -t $WITH2FA_URL/$CI_COMMIT_REF_NAME:latest --target with2fa ./server_side
-        - docker push $NO2FA_URL/$CI_COMMIT_REF_NAME:latest
-        - docker push $WITH2FA_URL/$CI_COMMIT_REF_NAME:latest
+        - docker build -f server_side/Dockerfile -t no2fa --target no2fa ./server_side
+        - docker build -f server_side/Dockerfile -t with2fa --target with2fa ./server_side
+        - docker tag no2fa $NO2FA_URL$IMAGE_PREFIX:latest
+        - docker tag with2fa $WITH2FA_URL$IMAGE_PREFIX:latest
+        - docker push $NO2FA_URL$IMAGE_PREFIX:latest
+        - docker push $WITH2FA_URL$IMAGE_PREFIX:latest
     tags:
         - rse-multi-builder

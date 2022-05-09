@@ -1,6 +1,6 @@
 FROM ubuntu:latest AS no2fa
 
-RUN apt-get update && apt-get install -y ssh libpam-python  curl python2
+RUN apt-get update && apt-get install -y ssh libpam-python  curl python2 sudo
 RUN curl https://bootstrap.pypa.io/pip/2.7/get-pip.py --output get-pip.py && python2 get-pip.py 
 RUN pip2 config set global.target /lib/python2.7 && pip2 install requests
 
@@ -28,7 +28,7 @@ ENTRYPOINT /tmp/oidc/docker-entrypoint.sh
 
 FROM no2fa AS with2fa
 
-RUN apt-get install -y libpam-google-authenticator 
+RUN apt-get install -y libpam-google-authenticator
 COPY sshd_2fa /etc/pam.d/sshd
 
 USER root
