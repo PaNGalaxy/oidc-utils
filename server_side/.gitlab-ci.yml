@@ -1,0 +1,24 @@
+variables:
+    NO2FA_URL: "${CI_REGISTRY_IMAGE}/ubuntu_sshd"
+    2FA_URL:   "${CI_REGISTRY_IMAGE}/ubuntu_sshd_2fa"
+
+# This import is for the func_rse_docker_* functions
+before_script:
+    - curl https://code.ornl.gov/rse-deployment/rse-sharables/raw/master/rse-bash-modules.sh -O
+    - source rse-bash-modules.sh
+    - func_rse_docker_cleanup
+
+after_script:
+    - curl https://code.ornl.gov/rse-deployment/rse-sharables/raw/master/rse-bash-modules.sh -O
+    - source rse-bash-modules.sh
+    - func_rse_docker_cleanup
+    - sudo chown -R gitlab-runner .
+
+docker-build:
+    stage: build
+    script:
+        - docker login --username=$CI_REGISTRY_USER --password=$CI_REGISTRY_PASSWORD $CI_REGISTRY
+        - docker build -f server_side/Dockerfile -t $NO2FA_URL/$CI_COMMIT_REF_NAME:latest --target no2fa ./server_side
+        - docker build -f server_side/Dockerfile -t $2FA_URL/$CI_COMMIT_REF_NAME:latest --target with2fa ./server_side 
+        - docker push $NO2FA_URL/$CI_COMMIT_REF_NAME:latest
+        - docker push $2FA_URL/$CI_COMMIT_REF_NAME:latest

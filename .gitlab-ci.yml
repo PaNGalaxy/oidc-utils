@@ -1,0 +1,5 @@
+stages:
+    - build
+
+include:
+    - local: /server_side/.gitlab-ci.yml
