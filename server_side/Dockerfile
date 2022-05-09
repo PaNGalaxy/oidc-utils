@@ -9,13 +9,19 @@ RUN mkhomedir_helper test
 RUN echo test:123 | chpasswd
 RUN mkdir /run/sshd
 
-COPY oidc-pam.py  /etc/securuty/oidc/oidc-pam.py
-COPY oidc-pam.json  /etc/securuty/oidc/oidc-pam.json
+COPY oidc-pam.py  /etc/security/oidc/oidc-pam.py
 COPY sshd /etc/pam.d/
 COPY sshd_pam.conf /etc/ssh/sshd_config.d/
+COPY docker-entrypoint.sh  /tmp/oidc/
+COPY update_oidc_config.py  /tmp/oidc/
+COPY oidc-pam.json  /tmp/oidc/
+RUN chmod 777 /tmp/oidc/docker-entrypoint.sh
+
 
 EXPOSE 22
-ENTRYPOINT /usr/sbin/sshd -D
+
+
+ENTRYPOINT /tmp/oidc/docker-entrypoint.sh
 
 
 #2FA
@@ -24,9 +30,5 @@ FROM no2fa AS with2fa
 
 RUN apt-get install -y libpam-google-authenticator 
 COPY sshd_2fa /etc/pam.d/sshd
-
-
-USER test
-RUN google-authenticator -t -d -f -W -u > /home/test/auth_secrets
 
 USER root

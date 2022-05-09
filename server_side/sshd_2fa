@@ -2,7 +2,7 @@
 
 auth  [success=ignore default=1] pam_unix.so
 auth [success=1 default=die] pam_google_authenticator.so 
-auth sufficient pam_python.so /etc/securuty/oidc/oidc-pam.py
+auth sufficient pam_python.so /etc/security/oidc/oidc-pam.py
 
 
 # Standard Un*x authentication.
