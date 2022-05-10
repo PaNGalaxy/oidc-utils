@@ -1,4 +1,4 @@
-FROM ubuntu:latest AS no2fa
+FROM ubuntu:22.04 AS no2fa
 
 RUN apt-get update && apt-get install -y ssh libpam-python  curl python2 sudo
 RUN curl https://bootstrap.pypa.io/pip/2.7/get-pip.py --output get-pip.py && python2 get-pip.py 
