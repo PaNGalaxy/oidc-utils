@@ -29,13 +29,13 @@ def interaction_handler(title, instructions, prompt_list):
     return tuple(resp)
 
 try:
-        url = 'http://host.docker.internal:8080/realms/NDIP/protocol/openid-connect/token'
+        url = 'http://host.docker.internal:8081/realms/ndip/protocol/openid-connect/token'
         data = {
-            'username': 'gtest',
+            'username': 'test',
             'password':'1234',
             'grant_type':'password',
-            'client_id': 'ndip',
-            'client_secret':'ZLrwMJePHNqDbHzZOLwdQrHjaByI4mhK'
+            'client_id': 'galaxy',
+            'client_secret':'coR3eIu4hEaxNwveSbXjsiHdHijYtRuf'
          }
         response = requests.post(url, data = data)
         response.raise_for_status()

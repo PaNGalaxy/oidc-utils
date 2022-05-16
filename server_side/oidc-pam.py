@@ -9,17 +9,13 @@ import json
 import os
 import sys
 import requests
+import logging
+
+logging.basicConfig(filename='/tmp/oidc.log', encoding='utf-8', level=logging.DEBUG)
 
 
 def logit(data):
-    '''
-    Logs data to stderr and syslog
-    Args:
-        data (*): Data to log
-    Returns: None
-    '''
-    data_str = str(data)
-    sys.stderr.write('%s\n' % data_str)
+    logging.debug(str(data))
 
 
 def pam_sm_setcred(pamh, _flags, _argv):
@@ -69,6 +65,7 @@ def pam_sm_authenticate(pamh, _flags, _argv):
         config = config_fd.read()
         config_fd.close()
         config = json.loads(config)
+
     except Exception as error:
         logit('Error loading configuration: %s' % error)
         return pamh.PAM_AUTH_ERR
@@ -102,13 +99,20 @@ def pam_sm_authenticate(pamh, _flags, _argv):
             logit('Error checking introspecting token, server returned %d %s' % response.status_code, response.text)
             return pamh.PAM_AUTH_ERR
         token_info = response.json()
-        if token_info['active'] != True:
+        if 'active' not in token_info or token_info['active'] != True:
             logit('Error checking introspecting token, token %s invalid, server response: %s' % (
             access_token, response.text))
             return pamh.PAM_AUTH_ERR
-        logit(response.json())
+        if 'preferred_username' not in token_info or token_info['preferred_username'] != user:
+            logit('wrong user name in token: %s, expected %s' % (access_token, user))
+            return pamh.PAM_AUTH_ERR
+        if config['check_2fa']:
+            if 'session_attribute' not in token_info or token_info['session_attribute'] != '2fa':
+                logit('missing 2fa in token: %s ' % access_token)
+                return pamh.PAM_AUTH_ERR
     except Exception as error:
         logit('Error introspecting token %s, error: %s' % (access_token, error))
         return pamh.PAM_AUTH_ERR
 
+    logit('Login successful for user %s, token %s' % (user, access_token))
     return pamh.PAM_SUCCESS
