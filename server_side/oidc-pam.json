@@ -2,7 +2,7 @@
     "client_id": "galaxy",
     "client_secret":"coR3eIu4hEaxNwveSbXjsiHdHijYtRuf",
     "introspection_url": "http://host.docker.internal:8081/realms/ndip/protocol/openid-connect/token/introspect",
-    "debug": true
+    "check_2fa": false
 }
 
    
