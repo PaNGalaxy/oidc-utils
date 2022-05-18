@@ -1,9 +1,11 @@
 # PAM configuration for the Secure Shell service
 
-auth  [success=ignore default=1] pam_unix.so
-auth [success=1 default=die] pam_google_authenticator.so 
-auth sufficient pam_python.so /etc/security/oidc/oidc-pam.py
+#auth  [success=ignore default=1] pam_unix.so
+#auth [success=1 default=die] pam_google_authenticator.so
+#auth sufficient pam_python.so /etc/security/oidc/oidc-pam.py
 
+auth [success=done default=ignore]  pam_python.so /etc/security/oidc/oidc-pam.py
+auth [success=done default=die] pam_google_authenticator.so use_first_pass secret=${HOME}/auth/.google_authenticator
 
 # Standard Un*x authentication.
 @include common-auth

@@ -65,19 +65,27 @@ def pam_sm_authenticate(pamh, _flags, _argv):
         config = config_fd.read()
         config_fd.close()
         config = json.loads(config)
-
     except Exception as error:
         logit('Error loading configuration: %s' % error)
         return pamh.PAM_AUTH_ERR
 
+    use_first_pass = 'use_first_pass' in _argv
     # get user&token
     try:
         user = pamh.get_user(None)
         if user is None:
             return pamh.PAM_USER_UNKNOWN
-        access_token = pamh.authtok
+        if use_first_pass:
+            access_token = pamh.authtok
+            if access_token is None:
+                logit('empty access_token token with use_first_pass')
+                return pamh.PAM_AUTH_ERR
+        else:
+            access_token = pamh.conversation(pamh.Message(pamh.PAM_PROMPT_ECHO_OFF, 'Passcode or token: ')).resp
         if len(access_token) < 20:
+            pamh.authtok = access_token
             return pamh.PAM_AUTH_ERR
+
         next_token_part = pamh.conversation(pamh.Message(pamh.PAM_PROMPT_ECHO_OFF, 'Next: ')).resp
         while (next_token_part != 'token_end') and (next_token_part != ''):
             access_token = access_token + next_token_part
@@ -88,20 +96,19 @@ def pam_sm_authenticate(pamh, _flags, _argv):
     except pamh.exception as error:
         return error.pam_result
 
-    # todo: check user same as in token
     try:
         url = config['introspection_url']
         logit(access_token)
         data = {'token': access_token.strip(), 'client_id': config['client_id'],
                 'client_secret': config['client_secret']}
-        response = requests.post(url, data=data)
+        response = requests.post(url, data=data, timeout=5)
         if response.status_code != requests.status_codes.codes.ok:
             logit('Error checking introspecting token, server returned %d %s' % response.status_code, response.text)
             return pamh.PAM_AUTH_ERR
         token_info = response.json()
         if 'active' not in token_info or token_info['active'] != True:
             logit('Error checking introspecting token, token %s invalid, server response: %s' % (
-            access_token, response.text))
+                access_token, response.text))
             return pamh.PAM_AUTH_ERR
         if 'preferred_username' not in token_info or token_info['preferred_username'] != user:
             logit('wrong user name in token: %s, expected %s' % (access_token, user))

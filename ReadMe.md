@@ -7,7 +7,7 @@
 
 ## Getting secrets/link to a QR code for Google Authenticator
 ```
-docker run --entrypoint="" ubuntu_sshd_2fa cat /home/test/auth_secrets
+docker exec <container_id> cat /home/test/auth/auth_secrets
 ```
 
 # PAM module in Python

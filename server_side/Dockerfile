@@ -30,6 +30,8 @@ FROM no2fa AS with2fa
 RUN apt-get install -y libpam-google-authenticator
 COPY sshd_2fa /etc/pam.d/sshd
 
+ENV OIDC_CHECK_2FA=1
+
 COPY start_2fa.sh  /tmp/oidc/
 RUN chmod 777 /tmp/oidc/start_2fa.sh
 
