@@ -10,6 +10,6 @@ if [ ! -e "/home/test/auth/.google_authenticator" ]; then
 fi
 
 cd /tmp/oidc
-python2 /tmp/oidc/update_oidc_config.py
+python /tmp/oidc/update_oidc_config.py
 
-/usr/sbin/sshd -D
+/usr/sbin/sshd -d

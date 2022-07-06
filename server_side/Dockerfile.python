@@ -1,26 +1,16 @@
-FROM ubuntu:22.04 AS package
+FROM ubuntu:22.04 AS no2fa
 
-RUN apt-get update && apt-get install -y ssh cmake libpam0g-dev python3
-
-COPY c  /src/c
-
-WORKDIR /src/c
-RUN bash ./build.sh
-
-
-
-FROM package AS no2fa
+RUN apt-get update && apt-get install -y ssh libpam-python  curl python2 sudo
+RUN curl https://bootstrap.pypa.io/pip/2.7/get-pip.py --output get-pip.py && python2 get-pip.py 
+RUN pip2 config set global.target /lib/python2.7 && pip2 install requests
 
 RUN useradd test
 RUN mkhomedir_helper test
 RUN echo test:123 | chpasswd
-RUN mkdir /run/sshd /etc/security/oidc
+RUN mkdir /run/sshd
 
-COPY --from=package /src/c/build/*.deb  /
-
-RUN dpkg -i /oidc-pam-0.1.0-Linux.deb
-
-COPY c/sshd /etc/pam.d/
+COPY python/oidc-pam.py  /etc/security/oidc/oidc-pam.py
+COPY python/sshd /etc/pam.d/
 COPY sshd_pam.conf /etc/ssh/sshd_config.d/
 COPY start_no2fa.sh  /tmp/oidc/
 COPY update_oidc_config.py  /tmp/oidc/
@@ -38,7 +28,7 @@ CMD /tmp/oidc/start_no2fa.sh
 FROM no2fa AS with2fa
 
 RUN apt-get install -y libpam-google-authenticator
-COPY c/sshd_2fa /etc/pam.d/sshd
+COPY python/sshd_2fa /etc/pam.d/sshd
 
 ENV OIDC_CHECK_2FA=1
 
@@ -49,5 +39,3 @@ CMD /tmp/oidc/start_2fa.sh
 
 
 USER root
-
-
