@@ -9,8 +9,13 @@ typedef struct json_config_t
     const char *client_secret;
     const char *introspection_url;
     int enable_2fa;
+    int enable_log;
+    const char *log_file;
     cJSON *parsed_object;
 } json_config_t;
+
+extern json_config_t config;
+
 
 int parse_config(const char* fname, json_config_t* config);
 

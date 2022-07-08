@@ -5,6 +5,8 @@
 #include <stdlib.h>
 
 #include "config.h"
+#include "auth.h"
+#include "log.h"
 
 /* expected hooks */
 PAM_EXTERN int pam_sm_open_session(pam_handle_t *pamh, int flags, int argc, const char **argv) {
@@ -27,17 +29,6 @@ PAM_EXTERN int pam_sm_acct_mgmt(pam_handle_t *pamh, int flags, int argc, const c
     return PAM_SUCCESS;
 }
 
-void logit(const char *msg) {
-    FILE *log = fopen("/tmp/oidc.log", "at");
-    if (!log) log = fopen("/tmp/oidc.log", "wt");
-    if (!log) {
-        return;
-    }
-    fprintf(log, "%s\n", msg);
-
-    fclose(log);
-}
-
 int conversation(pam_handle_t *pamh, const char *prompt, char **response) {
     struct pam_message msg;
     struct pam_conv *conv;
@@ -47,16 +38,16 @@ int conversation(pam_handle_t *pamh, const char *prompt, char **response) {
     msg.msg = prompt;
     int rc = pam_get_item(pamh, PAM_CONV, (const void **) &conv);
     if (rc != PAM_SUCCESS) {
-        logit("error in pam_get_item");
+        logstr("error in pam_get_item");
         return rc;
     }
     rc = conv->conv(1, (const struct pam_message **) &pMsg, &pResp, conv->appdata_ptr);
     if (rc != PAM_SUCCESS || pResp == NULL) {
-        logit("error in conv");
+        logstr("error in conv");
         return PAM_CONV_ERR;
     }
     if (pResp[0].resp == NULL) {
-        logit("empty response");
+        logstr("empty response");
         free(pResp);
         return PAM_AUTH_ERR;
     }
@@ -76,31 +67,31 @@ int get_access_token(pam_handle_t *pamh, int use_first_pass, char **access_token
     } else {
         int res = conversation(pamh, "Passcode or token: ", access_token);
         if (res != 0) {
-            logit("error in getting passcode or token");
+            logstr("error in getting passcode or token");
             return res;
         }
-        if (strlen(*access_token) < 20) { // assuming this is a password and should be processed in other module
-            pam_set_item(pamh, PAM_AUTHTOK, *access_token);
-            return PAM_AUTH_ERR;
-        }
+    }
+    if (strlen(*access_token) < 20) { // assuming this is a password and should be processed in other module
+        pam_set_item(pamh, PAM_AUTHTOK, *access_token);
+        return PAM_AUTH_ERR;
     }
 
     char *next_token_part = (char *) malloc(10000 * sizeof(char));
     int res = conversation(pamh, "Next: ", &next_token_part);
     if (res != 0) {
-        logit("error in getting next token part");
+        logstr("error in getting next token part");
         return res;
     }
     while (strlen(next_token_part) > 0 && strcmp(next_token_part, "token_end") != 0) {
         strcat(*access_token, next_token_part);
         res = conversation(pamh, "Next: ", &next_token_part);
         if (res != 0) {
-            logit("error in getting next token part");
+            logstr("error in getting next token part");
             return res;
         }
     }
     if (strlen(*access_token) == 0) {
-        logit("empty access token");
+        logstr("empty access token");
         return PAM_AUTH_ERR;
     }
 
@@ -108,22 +99,20 @@ int get_access_token(pam_handle_t *pamh, int use_first_pass, char **access_token
     return 0;
 }
 
-/* expected hook, this is where custom stuff happens */
 PAM_EXTERN int pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, const char **argv) {
-    json_config_t config;
     int res = parse_config(argv[0], &config);
     if (res != 0) {
-        logit("cannot parse config file");
+        logstr("cannot parse config file");
         return PAM_AUTH_ERR;
     }
 
-    int use_first_pass = argc == 2;
+    int use_first_pass = argc == 2 && strcmp(argv[1], "use_first_pass") == 0;
     // get user
     const char *pUsername;
     int retval = pam_get_user(pamh, &pUsername, NULL);
     if (retval != PAM_SUCCESS) {
         cJSON_Delete(config.parsed_object);
-        logit("unknown user");
+        logstr("unknown user");
         return PAM_USER_UNKNOWN;
     }
     // get token
@@ -134,11 +123,38 @@ PAM_EXTERN int pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, cons
         return retval;
     }
 
+    oidc_token_content_t token_info;
+    res = introspect_token(access_token, &token_info);
+    if (res != 0) {
+        logit("error introspecting token: %s\n",access_token);
+        return PAM_AUTH_ERR;
+    }
 
+    int token_ok = 1;
+    if (!token_info.active) {
+        logit("token inactive or wrong: %s\n",access_token);
+        token_ok = 0;
+    }
+
+    if (strcmp(token_info.user, pUsername) != 0) {
+        logit("error checking username, token: %s, user:\n",access_token,pUsername);
+        token_ok = 0;
+    }
+
+    if (config.enable_2fa &&
+        (token_info.session_attribute == NULL || strcmp(token_info.session_attribute, "2fa") != 0)) {
+        logit("error checking 2fa attribute, token: %s\n",access_token);
+        token_ok = 0;
+    }
+
+    cJSON_Delete(token_info.parsed_object);
     cJSON_Delete(config.parsed_object);
 
-    logit(access_token);
     free(access_token);
+
+    if (token_ok == 0) {
+        return PAM_AUTH_ERR;
+    }
 
     return PAM_SUCCESS;
 }

@@ -1,5 +1,34 @@
 stages:
     - build
 
-include:
-    - local: /server_side/.gitlab-ci.yml
+variables:
+    NO2FA_URL: "${CI_REGISTRY_IMAGE}/ubuntu_sshd"
+    WITH2FA_URL:   "${CI_REGISTRY_IMAGE}/ubuntu_sshd_2fa"
+
+# This import is for the func_rse_docker_* functions
+before_script:
+    - curl https://code.ornl.gov/rse-deployment/rse-sharables/raw/master/rse-bash-modules.sh -O
+    - source rse-bash-modules.sh
+    - func_rse_docker_cleanup
+
+after_script:
+    - curl https://code.ornl.gov/rse-deployment/rse-sharables/raw/master/rse-bash-modules.sh -O
+    - source rse-bash-modules.sh
+    - func_rse_docker_cleanup
+    - sudo chown -R gitlab-runner .
+
+docker-build:
+    variables:
+        IMAGE_PREFIX: "/$CI_COMMIT_REF_NAME"
+    stage: build
+    script:
+        - docker login --username=$CI_REGISTRY_USER --password=$CI_REGISTRY_PASSWORD $CI_REGISTRY
+        - if [$CI_COMMIT_REF_NAME == 'master']; then export IMAGE_PREFIX=""; fi
+        - docker build -f server_side/Dockerfile -t no2fa --target no2fa ./server_side
+        - docker build -f server_side/Dockerfile -t with2fa --target with2fa ./server_side
+        - docker tag no2fa $NO2FA_URL$IMAGE_PREFIX:latest
+        - docker tag with2fa $WITH2FA_URL$IMAGE_PREFIX:latest
+        - docker push $NO2FA_URL$IMAGE_PREFIX:latest
+        - docker push $WITH2FA_URL$IMAGE_PREFIX:latest
+    tags:
+        - rse-multi-builder

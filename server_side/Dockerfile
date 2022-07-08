@@ -1,6 +1,6 @@
 FROM ubuntu:22.04 AS package
 
-RUN apt-get update && apt-get install -y ssh cmake libpam0g-dev python3
+RUN apt-get update && apt-get install -y cmake libpam0g-dev libcurl4-openssl-dev
 
 COPY c  /src/c
 
@@ -9,12 +9,15 @@ RUN bash ./build.sh
 
 
 
-FROM package AS no2fa
+FROM ubuntu:22.04 AS no2fa
 
 RUN useradd test
 RUN mkhomedir_helper test
 RUN echo test:123 | chpasswd
 RUN mkdir /run/sshd /etc/security/oidc
+
+RUN apt-get update && apt-get install -y curl python3 ssh
+
 
 COPY --from=package /src/c/build/*.deb  /
 

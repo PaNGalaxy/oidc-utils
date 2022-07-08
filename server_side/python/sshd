@@ -1,8 +1,7 @@
 # PAM configuration for the Secure Shell service
 
 auth  [success=1 default=ignore] pam_unix.so
-auth sufficient pam_python.so /etc/security/oidc/oidc-pam.py /etc/security/oidc/oidc-pam.json
-#use_first_pass
+auth sufficient pam_python.so /etc/security/oidc/oidc-pam.py use_first_pass
 
 # Standard Un*x authentication.
 @include common-auth
