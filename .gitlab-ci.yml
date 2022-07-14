@@ -1,5 +1,6 @@
 stages:
     - build
+    - packages
 
 variables:
     NO2FA_URL: "${CI_REGISTRY_IMAGE}/ubuntu_sshd"
@@ -24,13 +25,22 @@ docker-build:
     script:
         - docker login --username=$CI_REGISTRY_USER --password=$CI_REGISTRY_PASSWORD $CI_REGISTRY
         - if [$CI_COMMIT_REF_NAME == 'master']; then export IMAGE_PREFIX=""; fi
-        - docker build -f server_side/Dockerfile -t no2fa --target no2fa ./server_side
-        - docker build -f server_side/Dockerfile -t with2fa --target with2fa ./server_side
-        - docker run --rm -v `pwd`:/tmp no2fa bash -c "cp /package/* /tmp"
+        - docker build -f server_side/dockerfiles/Dockerfile -t no2fa --target no2fa ./server_side
+        - docker build -f server_side/dockerfiles/Dockerfile -t with2fa --target with2fa ./server_side
         - docker tag no2fa $NO2FA_URL$IMAGE_PREFIX:latest
         - docker tag with2fa $WITH2FA_URL$IMAGE_PREFIX:latest
         - docker push $NO2FA_URL$IMAGE_PREFIX:latest
         - docker push $WITH2FA_URL$IMAGE_PREFIX:latest
+    tags:
+        - rse-multi-builder
+
+docker-build-packages:
+    stage: packages
+    script:
+        - docker build -f server_side/dockerfiles/Dockerfile -t ubuntu22 --target package ./server_side
+        - docker run --rm -v `pwd`:/tmp ubuntu22 bash -c "cp /src/c/build/*.deb /tmp"
+        - docker build -f server_side/dockerfiles/Dockerfile.opensuse -t opensuse ./server_side
+        - docker run --rm -v `pwd`:/tmp opensuse bash -c "cp /src/c/build/*.rpm /tmp"
     artifacts:
         paths:
             - "oidc-pam-0.1.0-Linux.deb"

@@ -1,0 +1,9 @@
+from opensuse/leap:15.3
+
+RUN  zypper in -y cmake libcurl-devel pam-devel gcc rpmbuild
+
+COPY c  /src/c
+
+WORKDIR /src/c
+RUN bash ./build.sh RPM
+

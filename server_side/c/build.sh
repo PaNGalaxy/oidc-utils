@@ -3,4 +3,4 @@ mkdir build
 cd build
 cmake ..
 make
-make package
+cpack -G $1

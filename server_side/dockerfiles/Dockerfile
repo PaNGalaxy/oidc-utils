@@ -5,7 +5,7 @@ RUN apt-get update && apt-get install -y cmake libpam0g-dev libcurl4-openssl-dev
 COPY c  /src/c
 
 WORKDIR /src/c
-RUN bash ./build.sh
+RUN bash ./build.sh DEB
 
 
 
