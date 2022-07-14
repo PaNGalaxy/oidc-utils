@@ -123,31 +123,31 @@ PAM_EXTERN int pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, cons
         return retval;
     }
 
-    oidc_token_content_t token_info;
-    res = introspect_token(access_token, &token_info);
+    oidc_token_content_t token_content;
+    res = introspect_token(access_token, &token_content);
     if (res != 0) {
         logit("error introspecting token: %s\n",access_token);
         return PAM_AUTH_ERR;
     }
 
     int token_ok = 1;
-    if (!token_info.active) {
+    if (!token_content.active) {
         logit("token inactive or wrong: %s\n",access_token);
         token_ok = 0;
     }
 
-    if (strcmp(token_info.user, pUsername) != 0) {
+    if (strcmp(token_content.user, pUsername) != 0) {
         logit("error checking username, token: %s, user:\n",access_token,pUsername);
         token_ok = 0;
     }
 
     if (config.enable_2fa &&
-        (token_info.session_attribute == NULL || strcmp(token_info.session_attribute, "2fa") != 0)) {
+        (token_content.session_attribute == NULL || strcmp(token_content.session_attribute, "2fa") != 0)) {
         logit("error checking 2fa attribute, token: %s\n",access_token);
         token_ok = 0;
     }
 
-    cJSON_Delete(token_info.parsed_object);
+    cJSON_Delete(token_content.parsed_object);
     cJSON_Delete(config.parsed_object);
 
     free(access_token);

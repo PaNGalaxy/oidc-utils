@@ -26,9 +26,13 @@ docker-build:
         - if [$CI_COMMIT_REF_NAME == 'master']; then export IMAGE_PREFIX=""; fi
         - docker build -f server_side/Dockerfile -t no2fa --target no2fa ./server_side
         - docker build -f server_side/Dockerfile -t with2fa --target with2fa ./server_side
+        - docker run --rm -v `pwd`:/tmp no2fa bash -c "cp /package/* /tmp"
         - docker tag no2fa $NO2FA_URL$IMAGE_PREFIX:latest
         - docker tag with2fa $WITH2FA_URL$IMAGE_PREFIX:latest
         - docker push $NO2FA_URL$IMAGE_PREFIX:latest
         - docker push $WITH2FA_URL$IMAGE_PREFIX:latest
+    artifacts:
+        paths:
+            - "oidc-pam-0.1.0-Linux.deb"
     tags:
         - rse-multi-builder

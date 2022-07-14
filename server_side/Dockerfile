@@ -19,9 +19,9 @@ RUN mkdir /run/sshd /etc/security/oidc
 RUN apt-get update && apt-get install -y curl python3 ssh
 
 
-COPY --from=package /src/c/build/*.deb  /
+COPY --from=package /src/c/build/*.deb  /package/
 
-RUN dpkg -i /oidc-pam-0.1.0-Linux.deb
+RUN dpkg -i /package/oidc-pam-0.1.0-Linux.deb
 
 COPY c/sshd /etc/pam.d/
 COPY sshd_pam.conf /etc/ssh/sshd_config.d/

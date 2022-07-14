@@ -23,6 +23,9 @@ SET(CPACK_DEBIAN_PACKAGE_MAINTAINER "ORNL")
 set(CPACK_PACKAGE_VERSION_MAJOR "0")
 set(CPACK_PACKAGE_VERSION_MINOR "1")
 set(CPACK_PACKAGE_VERSION_PATCH "0")
+
+set(CPACK_DEBIAN_PACKAGE_DEPENDS "curl")
+
 INCLUDE(CPack)
 
 add_executable(oidc-pam-main main.c config.c  json/cJSON.c auth.c log.c)
