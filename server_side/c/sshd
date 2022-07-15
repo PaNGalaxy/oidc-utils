@@ -1,7 +1,7 @@
 # PAM configuration for the Secure Shell service
 
 auth  [success=1 default=ignore] pam_unix.so
-auth   [success=done default=die] oidc-pam.so /etc/security/oidc/oidc-pam.json use_first_pass
+auth   [success=done default=die] /usr/lib/security/oidc-pam.so /etc/security/oidc/oidc-pam.json use_first_pass
 
 # Standard Un*x authentication.
 @include common-auth

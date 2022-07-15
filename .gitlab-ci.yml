@@ -3,7 +3,7 @@ stages:
 
 variables:
     NO2FA_URL: "${CI_REGISTRY_IMAGE}/ubuntu_sshd"
-    WITH2FA_URL:   "${CI_REGISTRY_IMAGE}/ubuntu_sshd_2fa"
+    WITH2FA_URL:   "${CI_REGISTRY_IMAGE}/opensuse_sshd_2fa"
 
 # This import is for the func_rse_docker_* functions
 before_script:
@@ -24,8 +24,8 @@ build-docker:
     script:
         - docker login --username=$CI_REGISTRY_USER --password=$CI_REGISTRY_PASSWORD $CI_REGISTRY
         - if [$CI_COMMIT_REF_NAME == 'master']; then export IMAGE_PREFIX=""; fi
-        - docker build -f server_side/dockerfiles/Dockerfile -t no2fa --target no2fa ./server_side
-        - docker build -f server_side/dockerfiles/Dockerfile -t with2fa --target with2fa ./server_side
+        - docker build -f server_side/dockerfiles/Dockerfile.ubuntu -t no2fa --target no2fa ./server_side
+        - docker build -f server_side/dockerfiles/Dockerfile.opensuse -t with2fa --target with2fa ./server_side
         - docker tag no2fa $NO2FA_URL$IMAGE_PREFIX:latest
         - docker tag with2fa $WITH2FA_URL$IMAGE_PREFIX:latest
         - docker push $NO2FA_URL$IMAGE_PREFIX:latest
@@ -36,9 +36,9 @@ build-docker:
 build-packages:
     stage: build
     script:
-        - docker build -f server_side/dockerfiles/Dockerfile -t ubuntu22 --target package ./server_side
+        - docker build -f server_side/dockerfiles/Dockerfile.ubuntu -t ubuntu22 --target package ./server_side
         - docker run --rm -v `pwd`:/tmp ubuntu22 bash -c "cp /src/c/build/*.deb /tmp"
-        - docker build -f server_side/dockerfiles/Dockerfile.opensuse -t opensuse ./server_side
+        - docker build -f server_side/dockerfiles/Dockerfile.opensuse -t opensuse --target package ./server_side
         - docker run --rm -v `pwd`:/tmp opensuse bash -c "cp /src/c/build/*.rpm /tmp"
     artifacts:
         paths:

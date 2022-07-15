@@ -1,4 +1,4 @@
-from opensuse/leap:15.3
+from opensuse/leap:15.3 as package
 
 RUN  zypper in -y cmake libcurl-devel pam-devel gcc rpmbuild
 
@@ -6,4 +6,42 @@ COPY c  /src/c
 
 WORKDIR /src/c
 RUN bash ./build.sh RPM
+
+
+#2FA
+
+FROM opensuse/leap:15.3 AS with2fa
+
+RUN useradd test
+RUN mkhomedir_helper test
+RUN echo test:123 | chpasswd
+RUN mkdir /run/sshd /etc/security/oidc
+
+
+RUN  zypper in -y google-authenticator-libpam curl python3 openssh
+
+
+COPY --from=package /src/c/build/*.rpm  /package/
+
+RUN zypper in -y --allow-unsigned-rpm /package/oidc-pam-0.1.0-Linux.rpm
+
+COPY start_2fa.sh  /tmp/oidc/
+COPY update_oidc_config.py  /tmp/oidc/
+COPY oidc-pam.json  /tmp/oidc/
+COPY c/sshd_2fa /etc/pam.d/sshd
+COPY sshd_pam.conf /etc/ssh/sshd_config.d/
+
+EXPOSE 22
+
+ENV OIDC_CHECK_2FA=1
+
+
+RUN ssh-keygen -A
+
+RUN chmod 777 /tmp/oidc/start_2fa.sh
+CMD /tmp/oidc/start_2fa.sh
+
+
+USER root
+
 
