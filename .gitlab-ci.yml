@@ -23,7 +23,7 @@ build-docker:
     stage: build
     script:
         - docker login --username=$CI_REGISTRY_USER --password=$CI_REGISTRY_PASSWORD $CI_REGISTRY
-        - if [$CI_COMMIT_REF_NAME == 'master']; then export IMAGE_PREFIX=""; fi
+        - if [ $CI_COMMIT_REF_NAME == "main" ]; then export IMAGE_PREFIX=""; fi
         - docker build -f server_side/dockerfiles/Dockerfile.ubuntu -t no2fa --target no2fa ./server_side
         - docker build -f server_side/dockerfiles/Dockerfile.opensuse -t with2fa --target with2fa ./server_side
         - docker tag no2fa $NO2FA_URL$IMAGE_PREFIX:latest
