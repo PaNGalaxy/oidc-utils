@@ -18,7 +18,7 @@ RUN echo test:123 | chpasswd
 RUN mkdir /run/sshd /etc/security/oidc
 
 
-RUN  zypper in -y google-authenticator-libpam curl python3 openssh
+RUN  zypper in -y google-authenticator-libpam curl python3 openssh hostname
 
 
 COPY --from=package /src/c/build/*.rpm  /package/
