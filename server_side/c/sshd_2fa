@@ -1,0 +1,16 @@
+#%PAM-1.0
+
+# PAM configuration for the Secure Shell service
+
+auth   [success=done default=ignore]  /usr/lib/security/oidc-pam.so /etc/security/oidc/oidc-pam.json
+auth [success=done default=die] pam_google_authenticator.so use_first_pass secret=${HOME}/auth/.google_authenticator
+
+auth        requisite   pam_nologin.so
+#auth        include     common-auth
+account     requisite   pam_nologin.so
+account     include     common-account
+password    include     common-password
+session     required    pam_loginuid.so
+session     include     common-session
+session     optional    pam_lastlog.so   silent noupdate showfailed
+session     optional    pam_keyinit.so   force revoke
