@@ -1,6 +1,5 @@
 stages:
     - build
-    - packages
 
 variables:
     NO2FA_URL: "${CI_REGISTRY_IMAGE}/ubuntu_sshd"
@@ -18,7 +17,7 @@ after_script:
     - func_rse_docker_cleanup
     - sudo chown -R gitlab-runner .
 
-docker-build:
+build-docker:
     variables:
         IMAGE_PREFIX: "/$CI_COMMIT_REF_NAME"
     stage: build
@@ -34,8 +33,8 @@ docker-build:
     tags:
         - rse-multi-builder
 
-docker-build-packages:
-    stage: packages
+build-packages:
+    stage: build
     script:
         - docker build -f server_side/dockerfiles/Dockerfile -t ubuntu22 --target package ./server_side
         - docker run --rm -v `pwd`:/tmp ubuntu22 bash -c "cp /src/c/build/*.deb /tmp"
@@ -43,6 +42,7 @@ docker-build-packages:
         - docker run --rm -v `pwd`:/tmp opensuse bash -c "cp /src/c/build/*.rpm /tmp"
     artifacts:
         paths:
-            - "oidc-pam-0.1.0-Linux.deb"
+            - "*.deb"
+            - "*.rpm"
     tags:
         - rse-multi-builder
