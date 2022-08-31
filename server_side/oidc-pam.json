@@ -1,10 +1,21 @@
-{
+[{
+    "provider": "keycloak",
+    "verification_type": "introspection_url",
     "client_id": "galaxy",
     "client_secret":"coR3eIu4hEaxNwveSbXjsiHdHijYtRuf",
     "introspection_url": "http://host.docker.internal:8080/realms/ndip/protocol/openid-connect/token/introspect",
     "check_2fa": false,
     "enable_log": true,
     "log_file": "/tmp/oidc.log"
-}
-
+},
+{
+    "provider": "azure",
+    "verification_type": "jwks_url",
+    "client_id": "galaxy",
+    "client_secret":"coR3eIu4hEaxNwveSbXjsiHdHijYtRuf",
+    "jwk_url": "https://login.microsoftonline.com/{tenant}/discovery/v2.0/keys",
+    "check_2fa": false,
+    "enable_log": true,
+    "log_file": "/tmp/oidc.log"
+}]
    

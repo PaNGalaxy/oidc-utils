@@ -1,8 +1,13 @@
-FROM ubuntu:22.04 AS no2fa
+FROM ubuntu:18.04 AS no2fa
 
-RUN apt-get update && apt-get install -y ssh libpam-python  curl python2 sudo
-RUN curl https://bootstrap.pypa.io/pip/2.7/get-pip.py --output get-pip.py && python2 get-pip.py 
-RUN pip2 config set global.target /lib/python2.7 && pip2 install requests
+ARG DEBIAN_FRONTEND=noninteractive
+ENV TZ=Europe/Moscow
+RUN apt-get update && apt-get install -y ssh libpam-python curl python sudo vim python-dev build-essential libssl-dev
+RUN curl https://bootstrap.pypa.io/pip/2.7/get-pip.py --output get-pip.py && python get-pip.py 
+RUN apt-get install -y libffi-dev
+RUN pip config set global.target /lib/python2.7 \
+	&& pip install requests \
+	&& pip install jwt
 
 RUN useradd test
 RUN mkhomedir_helper test
