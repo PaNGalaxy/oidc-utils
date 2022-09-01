@@ -98,11 +98,11 @@ def pam_sm_authenticate(pamh, _flags, _argv):
         return error.pam_result
 
     if (os.environ['PAM_OIDC_VERFIFICATION_TYPE'] == "jwks_url"):
-        return verify_token_jwt(pamh, config, user, access_token)
+        return verify_token_jwt(pamh, user, access_token)
     else:    
-        return verify_token_introspection(pamh, config, user, access_token)
+        return verify_token_introspection(pamh, user, access_token)
 
-def verify_token_jwt(pamh, config, user, access_token):
+def verify_token_jwt(pamh, user, access_token):
     config = load_config_jwt(pamh)
     try:
         # Obtain appropriate cert from JWK URI
@@ -148,7 +148,7 @@ def verify_token_jwt(pamh, config, user, access_token):
     logit('Login successful for user %s, token %s' % (user, access_token))
     return pamh.PAM_SUCCESS
 
-def verify_token_introspection(pamh, config, user, access_token):
+def verify_token_introspection(pamh, user, access_token):
     logit('Attempting token verification through instrosepction URL.')
     config = load_config_introspection(pamh)
     try:
