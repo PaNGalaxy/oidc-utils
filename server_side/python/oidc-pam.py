@@ -109,7 +109,10 @@ def verify_token_jwt(pamh, config, user, access_token):
         jwks_url = config['jwks_uri']
         key_set = requests.get(jwks_url, timeout=5)
 
-        key_id = jwt.get_unverified_header(access_token)['kid']
+        encoded_header, rest = access_token.split('.', 1)
+        headerobj = json.loads(base64.b64_decode(encoded_header).decode('utf8'))
+
+        key_id = headerobj['kid']
         for key in key_set.json()['keys']:
             if key['kid'] == key_id:
                 x5c = key['x5c'][0]
@@ -120,7 +123,7 @@ def verify_token_jwt(pamh, config, user, access_token):
         cert = load_der_x509_certificate(base64.b64decode(x5c), default_backend())
 
         # Decode token (exp date is checked automatically)
-        decoded_token = jwt_decode(
+        decoded_token = jwt.decode(
                 access_token,
                 key=certificate.public_key(),
                 algorithms=['RS256'],
