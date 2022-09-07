@@ -7,7 +7,7 @@ RUN curl https://bootstrap.pypa.io/pip/2.7/get-pip.py --output get-pip.py && pyt
 RUN apt-get install -y libffi-dev
 RUN pip2 config set global.target /lib/python2.7 \
 	&& pip2 install requests \
-	&& pip2 install jwt==0.3.2 \
+	&& pip2 install pyjwt==1.7.1 \
 	&& pip2 install cryptography==2.3
 
 RUN useradd test
@@ -15,7 +15,7 @@ RUN mkhomedir_helper test
 RUN echo test:123 | chpasswd
 RUN mkdir /run/sshd
 
-COPY python/oidc-pam.py  /etc/security/oidc/oidc-pam.py
+COPY python/oidc_pam.py  /etc/security/oidc/oidc_pam.py
 COPY python/sshd /etc/pam.d/
 COPY sshd_pam.conf /etc/ssh/sshd_config.d/
 COPY start_no2fa.sh  /tmp/oidc/
