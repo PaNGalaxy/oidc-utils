@@ -92,7 +92,7 @@ def pam_sm_authenticate(pamh, _flags, _argv):
     except pamh.exception as error:
         return error.pam_result
 
-    return verify_token_jwt(pamh, user, access_token)
+    return verify_token_jwt(pamh, user, access_token, None)
        
 
 def verify_token_jwt(pamh, user, access_token, jwt_options):
