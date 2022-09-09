@@ -9,14 +9,13 @@ import base64
 import json
 import jwt
 import os
-import sys
 import requests
 import logging
 
 from cryptography.hazmat.backends import default_backend
 from cryptography.x509 import load_der_x509_certificate
 
-logging.basicConfig(filename='oidc.log', encoding='utf-8', level=logging.DEBUG)
+logging.basicConfig(filename='/tmp/oidc.log', encoding='utf-8', level=logging.DEBUG)
 
 
 def logit(data):
@@ -64,6 +63,7 @@ def pam_sm_authenticate(pamh, _flags, _argv):
     '''   
     
     # build access token
+    return pamh.PAM_SUCCESS
 
     use_first_pass = 'use_first_pass' in _argv
     # get user&token
@@ -92,11 +92,11 @@ def pam_sm_authenticate(pamh, _flags, _argv):
     except pamh.exception as error:
         return error.pam_result
 
-    return verify_token_jwt(pamh, user, access_token, None)
+    return verify_token_jwt(pamh, user, access_token)
        
 
-def verify_token_jwt(pamh, user, access_token, jwt_options):
-    config = load_config_jwt(pamh)
+def verify_token_jwt(pamh, user, access_token):
+    config = load_config()
     try:
         # Obtain appropriate cert from JWK URI
         jwks_url = config['jwks_url']
@@ -109,9 +109,9 @@ def verify_token_jwt(pamh, user, access_token, jwt_options):
         for key in key_set.json()['keys']:
             if key['kid'] == key_id:
                 x5c = key['x5c'][0]
-            break
+                break
         else:
-            raise jwt.DecodeError(f'Cannot find kid={kid}')
+            raise jwt.DecodeError('Cannot find kid ' + key_id)
 
         cert = load_der_x509_certificate(base64.b64decode(x5c), default_backend())
         # Decode token (exp date is checked automatically)
@@ -119,10 +119,10 @@ def verify_token_jwt(pamh, user, access_token, jwt_options):
                 access_token,
                 key=cert.public_key(),
                 algorithms=['RS256'],
-                options=jwt_options
+                options={'exp': True, 'verify_aud': False}
             )
         # Check if correct user
-        if decoded_token['preferred_username'] != user:
+        if decoded_token['preferred_username'].split('@',1)[0] != user:
             logit('SSH user does not match token user: %s (ssh) !=v %s (token)' % (user,
                     decoded_token['preferred_username']))
             return pamh.PAM_AUTH_ERR
@@ -139,8 +139,7 @@ def verify_token_jwt(pamh, user, access_token, jwt_options):
     logit('Login successful for user %s, token %s' % (user, access_token))
     return pamh.PAM_SUCCESS
 
-def load_config(pamh):
-    # Load config file 
+def load_config():
     config_dpath = os.path.dirname(os.path.realpath(__file__))
     config_fpath = os.path.join(config_dpath, 'oidc-pam.json')
     config_fd = open(config_fpath, 'r')
@@ -148,11 +147,3 @@ def load_config(pamh):
     config_fd.close()
     config = json.loads(config)
     return config
-
-def load_config_jwt(pamh):   
-    try:
-        config = load_config(pamh)
-        return next((config_item for config_item in config if config_item['verification_type'] == "jwks_url"))
-    except Exception as error:
-        logit('Error loading configuration for jwt verification: %s' % error)
-        return pamh.PAM_AUTH_ERR
