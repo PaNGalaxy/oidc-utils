@@ -61,9 +61,8 @@ def pam_sm_authenticate(pamh, _flags, _argv):
     '''
     Authenticates a user via an OIDC token
     '''   
-    
+
     # build access token
-    return pamh.PAM_SUCCESS
 
     use_first_pass = 'use_first_pass' in _argv
     # get user&token
