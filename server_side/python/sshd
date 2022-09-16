@@ -1,7 +1,7 @@
 # PAM configuration for the Secure Shell service
 
 auth  [success=1 default=ignore] pam_unix.so
-auth sufficient pam_python.so /etc/security/oidc/oidc-pam.py use_first_pass
+auth sufficient pam_python.so /etc/security/oidc/oidc_pam.py use_first_pass
 
 # Standard Un*x authentication.
 @include common-auth
@@ -15,7 +15,7 @@ account    required     pam_nologin.so
 # account  required     pam_access.so
 
 # Standard Un*x authorization.
-#account sufficient pam_python.so /opt/oidc/oidc-pam.py
+#account sufficient pam_python.so /opt/oidc/oidc_pam.py
 @include common-account
 
 # SELinux needs to be the first session rule.  This ensures that any

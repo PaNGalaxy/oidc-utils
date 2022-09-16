@@ -1,10 +1,9 @@
 {
-    "client_id": "galaxy",
-    "client_secret":"coR3eIu4hEaxNwveSbXjsiHdHijYtRuf",
-    "introspection_url": "http://host.docker.internal:8080/realms/ndip/protocol/openid-connect/token/introspect",
+    "provider": "azure",
+    "verification_type": "jwks_url",
+    "jwks_url": "https://login.microsoftonline.com/db3dbd43-4c4b-4544-9f8a-0553f9f5f25e/discovery/v2.0/keys",
+    "introspection_url": "",
     "check_2fa": false,
     "enable_log": true,
     "log_file": "/tmp/oidc.log"
 }
-
-   

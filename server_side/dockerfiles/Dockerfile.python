@@ -1,15 +1,25 @@
-FROM ubuntu:22.04 AS no2fa
+FROM ubuntu:20.04 AS no2fa
 
-RUN apt-get update && apt-get install -y ssh libpam-python  curl python2 sudo
-RUN curl https://bootstrap.pypa.io/pip/2.7/get-pip.py --output get-pip.py && python2 get-pip.py 
-RUN pip2 config set global.target /lib/python2.7 && pip2 install requests
+ARG DEBIAN_FRONTEND=noninteractive
+ARG TEST_USER=test
 
-RUN useradd test
-RUN mkhomedir_helper test
-RUN echo test:123 | chpasswd
+ENV TZ=America/New_York
+RUN apt-get update && apt-get install -y ssh libpam-python curl python2 sudo vim python2-dev build-essential
+RUN curl https://bootstrap.pypa.io/pip/2.7/get-pip.py --output get-pip.py && python2 get-pip.py
+RUN apt-get install -y libffi-dev libssl-dev
+RUN pip2 config set global.target /lib/python2.7 \
+	&& pip2 install requests \
+	&& pip2 install pyjwt==1.7.1 \
+	&& pip2 install cryptography==2.3
+
+env TEST_USER=$TEST_USER
+
+RUN useradd $TEST_USER
+RUN mkhomedir_helper $TEST_USER
+RUN echo $TEST_USER:123 | chpasswd
 RUN mkdir /run/sshd
 
-COPY python/oidc-pam.py  /etc/security/oidc/oidc-pam.py
+COPY python/oidc_pam.py  /etc/security/oidc/oidc_pam.py
 COPY python/sshd /etc/pam.d/
 COPY sshd_pam.conf /etc/ssh/sshd_config.d/
 COPY start_no2fa.sh  /tmp/oidc/

@@ -5,11 +5,15 @@
 '''
 PAM module for authenticating users via a OIDC token
 '''
+import base64
 import json
+import jwt
 import os
-import sys
 import requests
 import logging
+
+from cryptography.hazmat.backends import default_backend
+from cryptography.x509 import load_der_x509_certificate
 
 logging.basicConfig(filename='/tmp/oidc.log', encoding='utf-8', level=logging.DEBUG)
 
@@ -56,18 +60,9 @@ def pam_sm_chauthtok(pamh, _flags, _argv):
 def pam_sm_authenticate(pamh, _flags, _argv):
     '''
     Authenticates a user via an OIDC token
-    '''
-    # Load config file and build access token
-    try:
-        config_dpath = os.path.dirname(os.path.realpath(__file__))
-        config_fpath = os.path.join(config_dpath, 'oidc-pam.json')
-        config_fd = open(config_fpath, 'r')
-        config = config_fd.read()
-        config_fd.close()
-        config = json.loads(config)
-    except Exception as error:
-        logit('Error loading configuration: %s' % error)
-        return pamh.PAM_AUTH_ERR
+    '''   
+
+    # build access token
 
     use_first_pass = 'use_first_pass' in _argv
     # get user&token
@@ -96,30 +91,58 @@ def pam_sm_authenticate(pamh, _flags, _argv):
     except pamh.exception as error:
         return error.pam_result
 
+    return verify_token_jwt(pamh, user, access_token)
+       
+
+def verify_token_jwt(pamh, user, access_token):
+    config = load_config()
     try:
-        url = config['introspection_url']
-        logit(access_token)
-        data = {'token': access_token.strip(), 'client_id': config['client_id'],
-                'client_secret': config['client_secret']}
-        response = requests.post(url, data=data, timeout=5)
-        if response.status_code != requests.status_codes.codes.ok:
-            logit('Error checking introspecting token, server returned %d %s' % response.status_code, response.text)
+        # Obtain appropriate cert from JWK URI
+        jwks_url = config['jwks_url']
+        
+        key_set = requests.get(jwks_url, timeout=5)
+
+        encoded_header, rest = access_token.split('.', 1)
+        headerobj = json.loads(base64.b64decode(encoded_header+ '==').decode('utf8'))
+        key_id = headerobj['kid']
+        for key in key_set.json()['keys']:
+            if key['kid'] == key_id:
+                x5c = key['x5c'][0]
+                break
+        else:
+            raise jwt.DecodeError('Cannot find kid ' + key_id)
+
+        cert = load_der_x509_certificate(base64.b64decode(x5c), default_backend())
+        # Decode token (exp date is checked automatically)
+        decoded_token = jwt.decode(
+                access_token,
+                key=cert.public_key(),
+                algorithms=['RS256'],
+                options={'exp': True, 'verify_aud': False}
+            )
+        # Check if correct user
+        if decoded_token['preferred_username'].split('@',1)[0] != user:
+            logit('SSH user does not match token user: %s (ssh) !=v %s (token)' % (user,
+                    decoded_token['preferred_username']))
             return pamh.PAM_AUTH_ERR
-        token_info = response.json()
-        if 'active' not in token_info or token_info['active'] != True:
-            logit('Error checking introspecting token, token %s invalid, server response: %s' % (
-                access_token, response.text))
-            return pamh.PAM_AUTH_ERR
-        if 'preferred_username' not in token_info or token_info['preferred_username'] != user:
-            logit('wrong user name in token: %s, expected %s' % (access_token, user))
-            return pamh.PAM_AUTH_ERR
+
+        # Check if two factor authenticated
         if config['check_2fa']:
-            if 'session_attribute' not in token_info or token_info['session_attribute'] != '2fa':
+            if 'mfa' not in decoded_token['amr']:
                 logit('missing 2fa in token: %s ' % access_token)
                 return pamh.PAM_AUTH_ERR
     except Exception as error:
-        logit('Error introspecting token %s, error: %s' % (access_token, error))
+        logit('Error verifying jwt token %s, error: %s' % (access_token, error))
         return pamh.PAM_AUTH_ERR
-
+        
     logit('Login successful for user %s, token %s' % (user, access_token))
     return pamh.PAM_SUCCESS
+
+def load_config():
+    config_dpath = os.path.dirname(os.path.realpath(__file__))
+    config_fpath = os.path.join(config_dpath, 'oidc-pam.json')
+    config_fd = open(config_fpath, 'r')
+    config = config_fd.read()
+    config_fd.close()
+    config = json.loads(config)
+    return config

@@ -2,9 +2,9 @@
 
 #auth  [success=ignore default=1] pam_unix.so
 #auth [success=1 default=die] pam_google_authenticator.so
-#auth sufficient pam_python.so /etc/security/oidc/oidc-pam.py
+#auth sufficient pam_python.so /etc/security/oidc/oidc_pam.py
 
-auth [success=done default=ignore]  pam_python.so /etc/security/oidc/oidc-pam.py
+auth [success=done default=ignore]  pam_python.so /etc/security/oidc/oidc_pam.py
 auth [success=done default=die] pam_google_authenticator.so use_first_pass secret=${HOME}/auth/.google_authenticator
 
 # Standard Un*x authentication.
@@ -19,7 +19,7 @@ account    required     pam_nologin.so
 # account  required     pam_access.so
 
 # Standard Un*x authorization.
-#account sufficient pam_python.so /opt/oidc/oidc-pam.py
+#account sufficient pam_python.so /opt/oidc/oidc_pam.py
 @include common-account
 
 # SELinux needs to be the first session rule.  This ensures that any
