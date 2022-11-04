@@ -38,16 +38,16 @@ int conversation(pam_handle_t *pamh, const char *prompt, char **response) {
     msg.msg = prompt;
     int rc = pam_get_item(pamh, PAM_CONV, (const void **) &conv);
     if (rc != PAM_SUCCESS) {
-        logstr("error in pam_get_item");
+        logstr("error in pam_get_item\n");
         return rc;
     }
     rc = conv->conv(1, (const struct pam_message **) &pMsg, &pResp, conv->appdata_ptr);
     if (rc != PAM_SUCCESS || pResp == NULL) {
-        logstr("error in conv");
+        logstr("error in conv\n");
         return PAM_CONV_ERR;
     }
     if (pResp[0].resp == NULL) {
-        logstr("empty response");
+        logstr("empty response\n");
         free(pResp);
         return PAM_AUTH_ERR;
     }
@@ -67,7 +67,7 @@ int get_access_token(pam_handle_t *pamh, int use_first_pass, char **access_token
     } else {
         int res = conversation(pamh, "Passcode or token: ", access_token);
         if (res != 0) {
-            logstr("error in getting passcode or token");
+            logstr("error in getting passcode or token\n");
             return res;
         }
     }
@@ -79,19 +79,19 @@ int get_access_token(pam_handle_t *pamh, int use_first_pass, char **access_token
     char *next_token_part = (char *) malloc(10000 * sizeof(char));
     int res = conversation(pamh, "Next: ", &next_token_part);
     if (res != 0) {
-        logstr("error in getting next token part");
+        logstr("error in getting next token part\n");
         return res;
     }
     while (strlen(next_token_part) > 0 && strcmp(next_token_part, "token_end") != 0) {
         strcat(*access_token, next_token_part);
         res = conversation(pamh, "Next: ", &next_token_part);
         if (res != 0) {
-            logstr("error in getting next token part");
+            logstr("error in getting next token part\n");
             return res;
         }
     }
     if (strlen(*access_token) == 0) {
-        logstr("empty access token");
+        logstr("empty access token\n");
         return PAM_AUTH_ERR;
     }
 
@@ -102,7 +102,7 @@ int get_access_token(pam_handle_t *pamh, int use_first_pass, char **access_token
 PAM_EXTERN int pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, const char **argv) {
     int res = parse_config(argv[0], &config);
     if (res != 0) {
-        logstr("cannot parse config file");
+        logstr("cannot parse config file\n");
         return PAM_AUTH_ERR;
     }
 
@@ -112,7 +112,7 @@ PAM_EXTERN int pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, cons
     int retval = pam_get_user(pamh, &pUsername, NULL);
     if (retval != PAM_SUCCESS) {
         cJSON_Delete(config.parsed_object);
-        logstr("unknown user");
+        logstr("unknown user\n");
         return PAM_USER_UNKNOWN;
     }
     // get token
@@ -124,33 +124,24 @@ PAM_EXTERN int pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, cons
     }
 
     oidc_token_content_t token_content;
-    res = introspect_token(access_token, &token_content);
+    res = verify_token(access_token, &token_content);
     if (res != 0) {
         logit("error introspecting token: %s\n",access_token);
         return PAM_AUTH_ERR;
     }
 
     int token_ok = 1;
-    if (!token_content.active) {
-        logit("token inactive or wrong: %s\n",access_token);
-        token_ok = 0;
-    }
-
-    if (strcmp(token_content.user, pUsername) != 0) {
+    if (strncmp(token_content.user, pUsername, 3) != 0) {
         logit("error checking username, token: %s, user:\n",access_token,pUsername);
         token_ok = 0;
     }
 
-    if (config.enable_2fa &&
-        (token_content.session_attribute == NULL || strcmp(token_content.session_attribute, "2fa") != 0)) {
-        logit("error checking 2fa attribute, token: %s\n",access_token);
-        token_ok = 0;
-    }
+    ///TODO: Figure out 2fa
 
-    cJSON_Delete(token_content.parsed_object);
     cJSON_Delete(config.parsed_object);
 
     free(access_token);
+    free(token_content.user);
 
     if (token_ok == 0) {
         return PAM_AUTH_ERR;

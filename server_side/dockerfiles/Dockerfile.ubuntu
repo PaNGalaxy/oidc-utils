@@ -1,6 +1,6 @@
 FROM ubuntu:22.04 AS package
 
-RUN apt-get update && apt-get install -y cmake libpam0g-dev libcurl4-openssl-dev
+RUN apt-get update && apt-get install -y cmake libpam0g-dev libcurl4-openssl-dev libssl-dev vim
 
 COPY c  /src/c
 

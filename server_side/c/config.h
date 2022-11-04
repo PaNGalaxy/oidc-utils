@@ -1,13 +1,11 @@
 #ifndef OIDC_PAM_CONFIG_H
 #define OIDC_PAM_CONFIG_H
 
-#include "json/cJSON.h"
+#include "cjwt/cJSON.h"
 
 typedef struct json_config_t
 {
-    const char *client_id;
-    const char *client_secret;
-    const char *introspection_url;
+    const char *jwks_url;
     int enable_2fa;
     int enable_log;
     const char *log_file;
