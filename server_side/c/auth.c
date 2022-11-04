@@ -145,7 +145,7 @@ int verify_token(const char *token, oidc_token_content_t *token_info) {
     }
 
     // Actually validate token now
-    cjwt_return_value = cjwt_decode(token, strlen(token), OPT_ALLOW_ANY_TIME, (uint8_t *)loaded_cert, strlen(loaded_cert), time(NULL), 0, &jwt);
+    cjwt_return_value = cjwt_decode(token, strlen(token), 0, (uint8_t *)loaded_cert, strlen(loaded_cert), time(NULL), 0, &jwt);
 
     if (CJWTE_OK != cjwt_return_value) {
         logit("There was an issue while decoding token: %d\n", cjwt_return_value);
