@@ -1,6 +1,6 @@
 from opensuse/leap:15.3 as package
 
-RUN  zypper in -y cmake libcurl-devel pam-devel gcc rpmbuild libssl-dev vim
+RUN  zypper in -y cmake libcurl-devel pam-devel libopenssl-devel gcc rpmbuild vim
 
 COPY c  /src/c
 
