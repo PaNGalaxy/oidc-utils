@@ -5,19 +5,21 @@
 #include "auth.h"
 
 int main(int argc, char *argv[]) {
-    int res = parse_config("/Users/35y/projects/ndip/oidc-pam/server_side/oidc-pam.json", &config);
+    printf("args: %s %s\n", argv[1], argv[2]);
+
+    int res = parse_config(argv[1], &config);
     printf("res: %d\n",res);
     if (res ==1) {
         exit(1);
     }
-    printf("%s %s %s %d\n",config.client_id,config.client_secret,config.introspection_url,config.enable_2fa);
+    printf("%s %s %d\n",config.jwks_url,config.log_file,config.enable_2fa);
 
     oidc_token_content_t token_info;
-    res = introspect_token("sssss", &token_info);
-    printf("active: %d\n",token_info.active);
+    res = verify_token(argv[2], &token_info);
+    printf("user: %s\n",token_info.user);
     if (res == 1) {
         exit(1);
     }
     cJSON_Delete(config.parsed_object);
-    cJSON_Delete(token_info.parsed_object);
+    free(token_info.user);
 }

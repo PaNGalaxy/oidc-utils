@@ -6,15 +6,16 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/modules/")
 
 find_package(PAM REQUIRED)
 find_package(CURL REQUIRED)
+find_package(OpenSSL REQUIRED)
 
 include_directories (
    ${PAM_INCLUDE_DIR}
 )
 
-add_library(oidc-pam SHARED oidc-pam.c config.c json/cJSON.c auth.c log.c)
+add_library(oidc-pam SHARED oidc-pam.c config.c cjwt/cJSON.c auth.c log.c cjwt/base64.c cjwt/cjwt.c cjwt/jws_evp_openssl.c cjwt/print.c cjwt/utils.c)
 set_target_properties(oidc-pam PROPERTIES PREFIX "")
 
-target_link_libraries(oidc-pam ${PAM_LIBRARIES} ${CURL_LIBRARIES})
+target_link_libraries(oidc-pam ${PAM_LIBRARIES} ${CURL_LIBRARIES} ssl crypto)
 
 install(TARGETS oidc-pam DESTINATION /usr/lib/security)
 
@@ -31,5 +32,5 @@ set(CPACK_RPM_PACKAGE_DEPENDS "curl")
 
 INCLUDE(CPack)
 
-add_executable(oidc-pam-main main.c config.c  json/cJSON.c auth.c log.c)
-target_link_libraries(oidc-pam-main ${PAM_LIBRARIES} ${CURL_LIBRARIES})
+add_executable(oidc-pam-main main.c config.c  cjwt/cJSON.c auth.c log.c cjwt/base64.c cjwt/cjwt.c cjwt/jws_evp_openssl.c cjwt/print.c cjwt/utils.c)
+target_link_libraries(oidc-pam-main ${PAM_LIBRARIES} ${CURL_LIBRARIES} ssl crypto)
