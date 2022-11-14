@@ -80,6 +80,7 @@ int get_access_token(pam_handle_t *pamh, int use_first_pass, char **access_token
     int res = conversation(pamh, "Next: ", &next_token_part);
     if (res != 0) {
         logstr("error in getting next token part\n");
+        free(next_token_part);
         return res;
     }
     while (strlen(next_token_part) > 0 && strcmp(next_token_part, "token_end") != 0) {
@@ -87,11 +88,13 @@ int get_access_token(pam_handle_t *pamh, int use_first_pass, char **access_token
         res = conversation(pamh, "Next: ", &next_token_part);
         if (res != 0) {
             logstr("error in getting next token part\n");
+            free(next_token_part);
             return res;
         }
     }
     if (strlen(*access_token) == 0) {
         logstr("empty access token\n");
+        free(next_token_part);
         return PAM_AUTH_ERR;
     }
 
@@ -111,7 +114,6 @@ PAM_EXTERN int pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, cons
     const char *pUsername;
     int retval = pam_get_user(pamh, &pUsername, NULL);
     if (retval != PAM_SUCCESS) {
-        cJSON_Delete(config.parsed_object);
         logstr("unknown user\n");
         return PAM_USER_UNKNOWN;
     }
@@ -120,19 +122,22 @@ PAM_EXTERN int pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, cons
     retval = get_access_token(pamh, use_first_pass, &access_token);
     if (retval != 0) {
         cJSON_Delete(config.parsed_object);
+        free(access_token);
         return retval;
     }
 
     oidc_token_content_t token_content;
     res = verify_token(access_token, &token_content);
     if (res != 0) {
-        logit("error introspecting token: %s\n",access_token);
+        logit("error introspecting token: %s\n", access_token);
+        cJSON_Delete(config.parsed_object);
+        free(access_token);
         return PAM_AUTH_ERR;
     }
 
     int token_ok = 1;
     if (strncmp(token_content.user, pUsername, 3) != 0) {
-        logit("error checking username, token: %s, user:\n",access_token,pUsername);
+        logit("error checking username, token: %s, user: %s\n", access_token, pUsername);
         token_ok = 0;
     }
 
