@@ -41,8 +41,8 @@ build-packages:
         - docker build -f server_side/dockerfiles/Dockerfile.opensuse -t opensuse --target package ./server_side
         - docker run --rm -v `pwd`:/tmp opensuse bash -c "cp /src/c/build/*.rpm /tmp"
         - fname=`ls *.rpm | head -n 1`
-        - 'curl --header "JOB-TOKEN: $CI_JOB_TOKEN" --upload-file $fname "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/rpm/0.1.0/$fname"'
+        - 'curl --header "JOB-TOKEN: $CI_JOB_TOKEN" --upload-file $fname "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/rpm/$fname"'
         - fname=`ls *.deb | head -n 1`
-        - 'curl --header "JOB-TOKEN: $CI_JOB_TOKEN" --upload-file $fname "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/deb/0.1.0/$fname"'
+        - 'curl --header "JOB-TOKEN: $CI_JOB_TOKEN" --upload-file $fname "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/deb/$fname"'
     tags:
         - rse-multi-builder
