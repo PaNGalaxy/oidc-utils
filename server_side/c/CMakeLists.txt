@@ -3,6 +3,7 @@ project(oidc-pam LANGUAGES C)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/modules/")
 
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 find_package(PAM REQUIRED)
 find_package(CURL REQUIRED)
