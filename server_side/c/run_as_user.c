@@ -14,7 +14,7 @@ int main(int argc, char *argv[]) {
         exit(1);
     }
     int res = parse_config(argv[1], &config);
-    if (res == 1) {
+    if (res != 0) {
         printf("cannot parse config file\n");
         exit(1);
     }
@@ -22,7 +22,7 @@ int main(int argc, char *argv[]) {
     oidc_token_content_t token_info;
     res = verify_token(argv[2], &token_info);
     cJSON_Delete(config.parsed_object);
-    if (res == 1) {
+    if (res != 0) {
         printf("cannot verify token\n");
         exit(1);
     }
@@ -35,9 +35,13 @@ int main(int argc, char *argv[]) {
         free(uname);
         exit(1);
     }
-    printf("Executing command \"%s\" as %s(%d)\n", argv[3], uname, pwd->pw_uid);
     free(token_info.user);
     free(uname);
-    setuid(pwd->pw_uid);
-    system(argv[3]);
+    res = setuid(pwd->pw_uid);
+    if (res != 0) {
+        printf("cannot set uid\n");
+        exit(1);
+    }
+    printf("Executing command \"%s\" as %s(%d)\n", argv[3], uname, pwd->pw_uid);
+    return system(argv[3]);
 }
