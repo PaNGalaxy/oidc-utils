@@ -44,4 +44,6 @@ target_link_libraries(oidc-pam-main oidc-helpers)
 
 add_executable(oidc-run-as-user run_as_user.c )
 target_link_libraries(oidc-run-as-user oidc-helpers)
-install(TARGETS oidc-run-as-user RUNTIME DESTINATION /usr/local/bin)
+install(TARGETS oidc-run-as-user RUNTIME DESTINATION /usr/local/bin
+        PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ
+        GROUP_EXECUTE GROUP_READ WORLD_READ WORLD_EXECUTE SETUID)
