@@ -5,12 +5,13 @@
 #include <stdlib.h>
 #include <pwd.h>
 #include <unistd.h>
+#include <sys/fcntl.h>
 
 #include "auth.h"
 
 int main(int argc, char *argv[]) {
-    if (argc != 4) {
-        printf("usage: %s <config_file> <OIDC token> <command>\n", argv[0]);
+    if (argc != 5) {
+        printf("usage: %s <config_file> <OIDC token> <mode> <path|command>\n", argv[0]);
         exit(1);
     }
     int res = parse_config(argv[1], &config);
@@ -42,6 +43,26 @@ int main(int argc, char *argv[]) {
         printf("cannot set uid\n");
         exit(1);
     }
-    printf("Executing command \"%s\" as %s(%d)\n", argv[3], uname, pwd->pw_uid);
-    return system(argv[3]);
+    if (strcmp(argv[3],"-c") == 0) {
+        return system(argv[4]);
+    } else if (strcmp(argv[3],"-f") == 0) {
+        int fd = open(argv[4], O_RDONLY);
+        if (fd == -1) {
+            printf("cannot open file %s\n", argv[4]);
+            exit(1);
+        }
+
+        char buf[1024];
+        int buflen;
+        while((buflen = read(fd, buf, 1024)) > 0)
+        {
+            write(1, buf, buflen);
+        }
+        close(fd);
+
+    } else {
+        printf("wrong mode %s\n",argv[3]);
+        exit(1);
+    }
+
 }
