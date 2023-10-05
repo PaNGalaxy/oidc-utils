@@ -43,9 +43,10 @@ int main(int argc, char *argv[]) {
         printf("cannot set uid\n");
         exit(1);
     }
-    if (strcmp(argv[3],"-c") == 0) {
-        return system(argv[4]);
-    } else if (strcmp(argv[3],"-f") == 0) {
+    if (strcmp(argv[3], "-c") == 0) {
+        int res = system(argv[4]);
+        exit(res == 0 ? 0 : 1);
+    } else if (strcmp(argv[3], "-f") == 0) {
         int fd = open(argv[4], O_RDONLY);
         if (fd == -1) {
             printf("cannot open file %s\n", argv[4]);
@@ -54,14 +55,13 @@ int main(int argc, char *argv[]) {
 
         char buf[1024];
         int buflen;
-        while((buflen = read(fd, buf, 1024)) > 0)
-        {
+        while ((buflen = read(fd, buf, 1024)) > 0) {
             write(1, buf, buflen);
         }
         close(fd);
 
     } else {
-        printf("wrong mode %s\n",argv[3]);
+        printf("wrong mode %s\n", argv[3]);
         exit(1);
     }
 
