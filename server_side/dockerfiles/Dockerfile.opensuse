@@ -23,7 +23,7 @@ RUN  zypper in -y google-authenticator-libpam curl python3 openssh hostname
 
 COPY --from=package /src/c/build/*.rpm  /package/
 
-RUN zypper in -y --allow-unsigned-rpm /package/oidc-pam-0.2.0-Linux.rpm
+RUN zypper in -y --allow-unsigned-rpm /package/oidc-pam-0.2.1-Linux.rpm
 
 COPY start_2fa.sh  /tmp/oidc/
 COPY update_oidc_config.py  /tmp/oidc/
