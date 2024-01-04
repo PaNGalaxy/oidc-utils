@@ -2,6 +2,7 @@
 #define OIDC_PAM_AUTH_H
 
 #include "config.h"
+#include <inttypes.h>
 
 typedef struct MemoryStruct {
     char *memory;
@@ -11,15 +12,12 @@ typedef struct MemoryStruct {
 typedef struct oidc_token_content_t
 {
     char *user;
-    // const char *session_attribute;
-    // int active;
+    int64_t exp;
 } oidc_token_content_t;
 
-int verify_token(const char* token, oidc_token_content_t *token_info);
+int verify_token(const char* token, oidc_token_content_t *token_info, int auth_number);
 
-cJSON* fetch_jwks();
-
-char *load_cert(const char* x509);
+cJSON* fetch_jwks(int auth_number);
 
 
 #endif //OIDC_PAM_AUTH_H

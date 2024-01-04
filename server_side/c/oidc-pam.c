@@ -127,7 +127,13 @@ PAM_EXTERN int pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, cons
     }
 
     oidc_token_content_t token_content;
-    res = verify_token(access_token, &token_content);
+    int auth = 0;
+    for (auth=0;auth<config.n_auth;auth++){
+        res = verify_token(argv[2], &token_content, auth);
+        if (res == 0) {
+            break;
+        }
+    }
     if (res != 0) {
         logit("error introspecting token: %s\n", access_token);
         cJSON_Delete(config.parsed_object);
