@@ -1,8 +1,6 @@
 #include "auth.h"
 
-#include <stdio.h>
 #include <stdlib.h>
-#include <memory.h>
 #include <openssl/bio.h>
 #include <openssl/err.h>
 #include <openssl/pem.h>
@@ -13,6 +11,7 @@
 #include <curl/curl.h>
 #include "cjwt/cJSON.h"
 #include "cjwt/cjwt.h"
+#include "cjwt/base64.h"
 #include "log.h"
 
 static size_t
@@ -35,9 +34,37 @@ WriteMemoryCallback(void *contents, size_t size, size_t nmemb, void *userp) {
     return realsize;
 }
 
-int verify_token(const char *token, oidc_token_content_t *token_info) {
+unsigned char* base64_urlsafe_decode(const char *input, int length, int *out_length) {
+    // Convert base64 URL-safe to base64 standard
+    char *converted = malloc(length + 2); // extra bytes for potential padding
+    strcpy(converted, input);
+    for (int i = 0; i < length; ++i) {
+        if (converted[i] == '-') converted[i] = '+';
+        if (converted[i] == '_') converted[i] = '/';
+    }
+    // Add necessary padding
+    while (strlen(converted) % 4) {
+        strcat(converted, "=");
+    }
+
+    // Decode base64 standard
+    BIO *bio, *b64;
+    unsigned char *buffer = malloc(length); // decoded length will be <= encoded length
+    bio = BIO_new_mem_buf(converted, -1);
+    b64 = BIO_new(BIO_f_base64());
+    bio = BIO_push(b64, bio);
+    BIO_set_flags(bio, BIO_FLAGS_BASE64_NO_NL); // Do not use newlines to flush buffer
+    *out_length = BIO_read(bio, buffer, strlen(converted));
+    BIO_free_all(bio);
+
+    free(converted);
+    return buffer;
+}
+
+
+int verify_token(const char *token, oidc_token_content_t *token_info, int auth_number) {
     
-    cJSON *keyset_json = fetch_jwks();
+    cJSON *keyset_json = fetch_jwks(auth_number);
 
     if (keyset_json == NULL) {
         const char *error_ptr = cJSON_GetErrorPtr();
@@ -63,36 +90,43 @@ int verify_token(const char *token, oidc_token_content_t *token_info) {
     // Search for correct key
     const cJSON *keyset = cJSON_GetObjectItemCaseSensitive(keyset_json, "keys");
 
-    const unsigned char *key = NULL;
+    const  char *n = NULL;
+    const  char *e = NULL;
+
     const cJSON *key_itr = NULL;
     const cJSON *kid = NULL;    
     cJSON_ArrayForEach(key_itr, keyset)
     {
         kid = cJSON_GetObjectItemCaseSensitive(key_itr, "kid");
-
-
         if (strcmp(kid->valuestring, token_kid) == 0)
         {
-            key = (cJSON_GetObjectItemCaseSensitive(key_itr, "x5c")->child->valuestring);
+            n = (cJSON_GetObjectItemCaseSensitive(key_itr, "n")->valuestring); // Modulus
+            e = (cJSON_GetObjectItemCaseSensitive(key_itr, "e")->valuestring); // Exponent
         }
-
     }
-    // Free header since it's no longer being used
+
     cjwt_header_destroy(jwt_header);
 
     // Handle not finding the correct key
-    if (!key) {
+    if (!n || !e) {
         logit("Could not find correct key in keyset. Token: %s\n", token);
         return 1;
     }
 
-    // Load Cert here
-    char* loaded_cert = load_cert(key);
-    cJSON_Delete(keyset_json);
-    if (loaded_cert == NULL) {
-        logit("Loaded cert is null. Token: %s\n", token);
-        return 1;
-    }
+    int n_length, e_length;
+    unsigned char *n_bytes = base64_urlsafe_decode(n, strlen(n), &n_length);
+    unsigned char *e_bytes = base64_urlsafe_decode(e, strlen(e), &e_length);
+    BIGNUM *n_bn = BN_bin2bn(n_bytes, n_length, NULL);
+    BIGNUM *e_bn = BN_bin2bn(e_bytes, e_length, NULL);
+
+    // Create RSA key
+    RSA *rsa = RSA_new();
+    RSA_set0_key(rsa, n_bn, e_bn, NULL);
+    BIO *pem_bio = BIO_new(BIO_s_mem());
+    PEM_write_bio_RSA_PUBKEY(pem_bio, rsa);
+
+    char *loaded_cert;
+    BIO_get_mem_data(pem_bio, &loaded_cert);
 
     // Actually validate token now
     cjwt_t *jwt = NULL;
@@ -104,10 +138,11 @@ int verify_token(const char *token, oidc_token_content_t *token_info) {
         return 1;
     }
 
-    const cJSON *user = cJSON_GetObjectItemCaseSensitive(jwt->private_claims, "preferred_username");
+    const cJSON *user = cJSON_GetObjectItemCaseSensitive(jwt->private_claims, config.name_field[auth_number]);
+    token_info->exp = *(jwt->exp);
 
     if (!cJSON_IsString(user) || (user->valuestring == NULL)) {
-        logit("Could not find 'preferred_username' claim.\n");
+        logit("Could not find %s claim.\n",config.name_field[auth_number]);
         cjwt_destroy(jwt);
         return 1;
     }
@@ -115,12 +150,13 @@ int verify_token(const char *token, oidc_token_content_t *token_info) {
     token_info->user = malloc(strlen(user->valuestring));
     strcpy(token_info->user, user->valuestring);
 
+    cJSON_Delete(keyset_json);
     cjwt_destroy(jwt);
 
     return 0;
 }
 
-cJSON* fetch_jwks() {
+cJSON* fetch_jwks(int auth_number) {
     memory_struct mem;
 
     mem.memory = malloc(1);  /* will be grown as needed by realloc above */
@@ -133,7 +169,7 @@ cJSON* fetch_jwks() {
     curl = curl_easy_init();
     long http_code = 0;
     if (curl) {
-        curl_easy_setopt(curl, CURLOPT_URL, config.jwks_url);
+        curl_easy_setopt(curl, CURLOPT_URL, config.jwks_url[auth_number]);
         curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteMemoryCallback);
         curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *) &mem);
         curl_easy_setopt(curl, CURLOPT_USERAGENT, "libcurl-agent/1.0");
@@ -157,57 +193,4 @@ cJSON* fetch_jwks() {
     cJSON *keyset_json = cJSON_Parse(mem.memory);
     free(mem.memory);
     return keyset_json;
-}
-
-char *load_cert(const char* x509) {
-
-    /* ---------------------------------------------------------- *
-    * These function calls initialize openssl for correct work.  *
-    * ---------------------------------------------------------- */
-    OpenSSL_add_all_algorithms();
-    ERR_load_BIO_strings();
-    ERR_load_crypto_strings();
-
-    const char *header = "-----BEGIN CERTIFICATE-----\n";
-    const char *footer = "\n-----END CERTIFICATE-----";
-
-    char *x509_formatted = malloc(strlen(x509) + strlen(header) + strlen(footer));
-    strcpy(x509_formatted, header);
-    strcat(x509_formatted, x509);
-    strcat(x509_formatted, footer);
-
-    X509 *cert = NULL;
-    BIO *certbio = BIO_new(BIO_s_mem());
-    BIO_write(certbio, x509_formatted, strlen(x509_formatted) + 1);
-    if (! (cert = PEM_read_bio_X509(certbio, NULL, 0, NULL))) {
-        logit("Error reading cert into memory. x509: %s\n", x509_formatted);
-        BIO_free_all(certbio);
-        free(x509_formatted);
-        return NULL;
-    }
-    BIO_free_all(certbio);
-
-    free(x509_formatted);
-
-    EVP_PKEY *pkey = NULL;
-    if ((pkey = X509_get_pubkey(cert)) == NULL) {
-        logit("Error getting public key.\n");
-        X509_free(cert);
-        return NULL;
-    }
-    X509_free(cert);
-    BIO *keybio = BIO_new(BIO_s_mem());
-    if(!PEM_write_bio_PUBKEY(keybio, pkey)) {
-        logit("Error writing public key data in PEM format\n");
-        EVP_PKEY_free(pkey);
-        return NULL;
-    }
-    char* key_buf = (char*) malloc(EVP_PKEY_bits(pkey) + 1);
-    memset(key_buf, 0, EVP_PKEY_bits(pkey) + 1);
-    BIO_read(keybio, key_buf, EVP_PKEY_bits(pkey));
-
-    EVP_PKEY_free(pkey);
-    BIO_free_all(keybio);
-
-    return key_buf;
 }

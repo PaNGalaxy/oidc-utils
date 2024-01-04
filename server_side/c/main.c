@@ -12,10 +12,10 @@ int main(int argc, char *argv[]) {
     if (res ==1) {
         exit(1);
     }
-    printf("%s %s %d\n",config.jwks_url,config.log_file,config.enable_2fa);
+    printf("%s %s %d\n",config.jwks_url[0],config.log_file,config.enable_2fa);
 
     oidc_token_content_t token_info;
-    res = verify_token(argv[2], &token_info);
+    res = verify_token(argv[2], &token_info,0);
     printf("user: %s\n",token_info.user);
     if (res == 1) {
         exit(1);

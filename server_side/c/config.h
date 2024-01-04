@@ -5,10 +5,14 @@
 
 typedef struct json_config_t
 {
-    const char *jwks_url;
+    int n_auth;
+    const char **jwks_url;
+    const char **name_field;
+    const char **name_separator;
     int enable_2fa;
     int enable_log;
     const char *log_file;
+    const char *cache_folder;
     cJSON *parsed_object;
 } json_config_t;
 
