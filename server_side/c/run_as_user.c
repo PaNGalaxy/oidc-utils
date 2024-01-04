@@ -29,7 +29,7 @@ char *copy_until_separator(const char *src, const char *separator) {
     return dest;
 }
 
-void sha256_string(char *string, char outputBuffer[65]) {
+void sha256_string(const char *string, char outputBuffer[65]) {
     unsigned char hash[SHA256_DIGEST_LENGTH];
     SHA256_CTX sha256;
     SHA256_Init(&sha256);
