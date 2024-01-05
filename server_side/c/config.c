@@ -17,13 +17,14 @@ int parse_config(const char* fname, json_config_t* config) {
     fseek (f, 0, SEEK_END);
     length = ftell (f);
     fseek (f, 0, SEEK_SET);
-    buffer = malloc (length);
+    buffer = malloc (length+1);
     if (!buffer) {
         return 1;
     }
     fread (buffer, 1, length, f);
     fclose (f);
-
+    buffer[length]=0;
+    
     cJSON *config_json = cJSON_Parse(buffer);
     if (config_json == NULL)
     {

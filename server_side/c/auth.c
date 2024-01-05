@@ -36,7 +36,7 @@ WriteMemoryCallback(void *contents, size_t size, size_t nmemb, void *userp) {
 
 unsigned char* base64_urlsafe_decode(const char *input, int length, int *out_length) {
     // Convert base64 URL-safe to base64 standard
-    char *converted = malloc(length + 2); // extra bytes for potential padding
+    char *converted = malloc(length + 3); // extra bytes for potential padding
     strcpy(converted, input);
     for (int i = 0; i < length; ++i) {
         if (converted[i] == '-') converted[i] = '+';
