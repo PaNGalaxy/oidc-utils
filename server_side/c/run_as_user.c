@@ -29,6 +29,21 @@ char *copy_until_separator(const char *src, const char *separator) {
     return dest;
 }
 
+char* remove_quotes(const char *str) {
+    int len = strlen(str);
+    char *result;
+    if (len >= 2 && str[0] == '\'' && str[len - 1] == '\'') {
+         result = (char *)malloc(len - 1);
+        strncpy(result, str + 1, len - 2);
+        result[len - 2] = '\0';
+        return result;
+    } else {
+        result = (char *)malloc(len+1);
+        strcpy(result, str);
+    }
+    return result;
+}
+
 void sha256_string(const char *string, char outputBuffer[65]) {
     unsigned char hash[SHA256_DIGEST_LENGTH];
     SHA256_CTX sha256;
@@ -123,7 +138,9 @@ int main(int argc, char *argv[]) {
         exit(1);
     }
     if (strcmp(argv[3], "-c") == 0) {
-        int res = system(argv[4]);
+        char* command = remove_quotes(argv[4]);
+        int res = system(command);
+        free(command);
         exit(res == 0 ? 0 : 1);
     } else if (strcmp(argv[3], "-f") == 0) {
         int fd = open(argv[4], O_RDONLY);
