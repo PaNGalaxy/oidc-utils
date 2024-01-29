@@ -32,9 +32,6 @@ COPY config/sshd_pam.conf /etc/ssh/sshd_config.d/
 
 EXPOSE 22
 
-ENV OIDC_CHECK_2FA=1
-
-
 RUN ssh-keygen -A
 
 RUN chmod 777 /tmp/oidc/start_2fa.sh

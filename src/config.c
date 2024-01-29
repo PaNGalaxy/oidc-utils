@@ -62,20 +62,17 @@ int parse_config(const char* fname, json_config_t* config) {
         config->name_separator[i] = name_separator->valuestring;
         i++;
     }
-    const cJSON *check_2fa = cJSON_GetObjectItemCaseSensitive(config_json, "check_2fa");
     const cJSON *enable_log = cJSON_GetObjectItemCaseSensitive(config_json, "enable_log");
     const cJSON *log_file = cJSON_GetObjectItemCaseSensitive(config_json, "log_file");
     const cJSON *cache_folder = cJSON_GetObjectItemCaseSensitive(config_json, "cache_folder");
 
-    if (!cJSON_IsBool(check_2fa) || !cJSON_IsBool(enable_log)
+    if (!cJSON_IsBool(enable_log)
     || !cJSON_IsString(cache_folder) || (cache_folder->valuestring == NULL))
     {
         free(buffer);
         return 1;
     }
 
-
-    config->enable_2fa = cJSON_IsFalse(check_2fa)?0:1;
     config->enable_log = cJSON_IsFalse(enable_log)?0:1;
     config->log_file = log_file->valuestring;
     config->cache_folder = cache_folder->valuestring;
