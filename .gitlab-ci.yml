@@ -5,7 +5,6 @@ variables:
     NO2FA_URL: "${CI_REGISTRY_IMAGE}/ubuntu_sshd"
     WITH2FA_URL:   "${CI_REGISTRY_IMAGE}/opensuse_sshd_2fa"
 
-# This import is for the func_rse_docker_* functions
 before_script:
     - curl https://code.ornl.gov/rse-deployment/rse-sharables/raw/master/rse-bash-modules.sh -O
     - source rse-bash-modules.sh
@@ -24,8 +23,8 @@ build-docker:
     script:
         - docker login --username=$CI_REGISTRY_USER --password=$CI_REGISTRY_PASSWORD $CI_REGISTRY
         - if [ $CI_COMMIT_REF_NAME == "main" ]; then export IMAGE_PREFIX=""; fi
-        - docker build -f server_side/dockerfiles/Dockerfile.ubuntu -t no2fa --target no2fa ./server_side
-        - docker build -f server_side/dockerfiles/Dockerfile.opensuse -t with2fa --target with2fa ./server_side
+        - docker build -f dockerfiles/Dockerfile.ubuntu -t no2fa --target no2fa .
+        - docker build -f dockerfiles/Dockerfile.opensuse -t with2fa --target with2fa .
         - docker tag no2fa $NO2FA_URL$IMAGE_PREFIX:latest
         - docker tag with2fa $WITH2FA_URL$IMAGE_PREFIX:latest
         - docker push $NO2FA_URL$IMAGE_PREFIX:latest
@@ -36,10 +35,10 @@ build-docker:
 build-packages:
     stage: build
     script:
-        - docker build -f server_side/dockerfiles/Dockerfile.ubuntu -t ubuntu22 --target package ./server_side
-        - docker run --rm -v `pwd`:/tmp ubuntu22 bash -c "cp /src/c/build/*.deb /tmp"
-        - docker build -f server_side/dockerfiles/Dockerfile.opensuse -t opensuse --target package ./server_side
-        - docker run --rm -v `pwd`:/tmp opensuse bash -c "cp /src/c/build/*.rpm /tmp"
+        - docker build -f dockerfiles/Dockerfile.ubuntu -t ubuntu22 --target package .
+        - docker run --rm -v `pwd`:/tmp ubuntu22 bash -c "cp /src/build/*.deb /tmp"
+        - docker build -f dockerfiles/Dockerfile.opensuse -t opensuse --target package .
+        - docker run --rm -v `pwd`:/tmp opensuse bash -c "cp /src/build/*.rpm /tmp"
         - fname=`ls *.rpm | head -n 1`
         - 'curl --header "JOB-TOKEN: $CI_JOB_TOKEN" --upload-file $fname "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/rpm/0.3.0/$fname"'
         - fname=`ls *.deb | head -n 1`

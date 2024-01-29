@@ -1,0 +1,6 @@
+{
+    "jwks_url": "xxx",
+    "check_2fa": false,
+    "enable_log": false,
+    "log_file": "/tmp/oidc.log"
+}

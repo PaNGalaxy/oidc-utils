@@ -2,9 +2,9 @@ from opensuse/leap:15.3 as package
 
 RUN  zypper in -y cmake libcurl-devel pam-devel libopenssl-devel gcc rpmbuild vim
 
-COPY c  /src/c
+COPY /src  /src
 
-WORKDIR /src/c
+WORKDIR /src
 RUN bash ./build.sh RPM
 
 
@@ -21,15 +21,14 @@ RUN mkdir /run/sshd /etc/security/oidc
 RUN  zypper in -y google-authenticator-libpam curl python3 openssh hostname
 
 
-COPY --from=package /src/c/build/*.rpm  /package/
+COPY --from=package /src/build/*.rpm  /package/
 
 RUN zypper in -y --allow-unsigned-rpm /package/oidc-pam-0.3.0-Linux.rpm
 
-COPY start_2fa.sh  /tmp/oidc/
-COPY update_oidc_config.py  /tmp/oidc/
-COPY oidc-pam.json  /tmp/oidc/
-COPY c/sshd_2fa /etc/pam.d/sshd
-COPY sshd_pam.conf /etc/ssh/sshd_config.d/
+COPY dockerfiles/start_2fa.sh  /tmp/oidc/
+COPY config/oidc-pam.json  /tmp/oidc/
+COPY config/sshd_2fa /etc/pam.d/sshd
+COPY config/sshd_pam.conf /etc/ssh/sshd_config.d/
 
 EXPOSE 22
 

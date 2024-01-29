@@ -38,10 +38,6 @@ set(CPACK_RPM_PACKAGE_DEPENDS "curl")
 
 INCLUDE(CPack)
 
-add_executable(oidc-pam-main main.c )
-target_link_libraries(oidc-pam-main oidc-helpers)
-
-
 add_executable(oidc-run-as-user run_as_user.c )
 target_link_libraries(oidc-run-as-user oidc-helpers)
 install(TARGETS oidc-run-as-user RUNTIME DESTINATION /usr/local/bin

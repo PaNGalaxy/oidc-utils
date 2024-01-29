@@ -104,7 +104,7 @@ struct passwd *pwd_from_token(const char *token, const char *token_file_path) {
         exit(1);
     }
     FILE *file = fopen(token_file_path, "w");
-    fprintf(file, "%s %ld\n", uname, token_info.exp);
+    fprintf(file, "%s %lld\n", uname, token_info.exp);
     fclose(file);
     free(token_info.user);
     free(uname);
