@@ -147,8 +147,6 @@ PAM_EXTERN int pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, cons
         token_ok = 0;
     }
 
-    ///TODO: Figure out 2fa
-
     cJSON_Delete(config.parsed_object);
 
     free(access_token);

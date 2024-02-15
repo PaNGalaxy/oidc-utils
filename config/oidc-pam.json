@@ -1,0 +1,17 @@
+{
+    "auth": [
+        {
+            "jwks_url": "jwks_url_1",
+            "name_field": "username",
+            "name_separator": ""
+        },
+        {
+            "jwks_url": "jwks_url_2",
+            "name_field": "preferred_username",
+            "name_separator": "@"
+        }
+    ],
+    "enable_log": true,
+    "cache_folder": "/var/tmp/oidc_cache",
+    "log_file": "/var/log/oidc_log"
+}

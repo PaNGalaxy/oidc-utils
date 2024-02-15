@@ -73,7 +73,7 @@ int token_from_file(const char *token_file_path, char *username) {
         if (fscanf(file, "%s %ld", username, &expirationTime) != 2) {
             fprintf(stderr, "Error reading from file\n");
             fclose(file);
-            return 0;
+            return 1;
         }
         fclose(file);
     }
@@ -104,7 +104,7 @@ struct passwd *pwd_from_token(const char *token, const char *token_file_path) {
         exit(1);
     }
     FILE *file = fopen(token_file_path, "w");
-    fprintf(file, "%s %ld\n", uname, token_info.exp);
+    fprintf(file, "%s %lld\n", uname, token_info.exp);
     fclose(file);
     free(token_info.user);
     free(uname);
@@ -121,15 +121,18 @@ int main(int argc, char *argv[]) {
         printf("cannot parse config file\n");
         exit(1);
     }
+    config.log_file="system";
+
+    // get uid from token, verify token if not in cache
     char token_file_path[4056];
     get_token_file_path(argv[2], token_file_path, sizeof(token_file_path));
-
     char username[50];
     struct passwd *pwd;
-    if (token_from_file(token_file_path, username) == 1) {
-        pwd = pwd_from_token(argv[2], token_file_path);
-    } else {
+    if (token_from_file(token_file_path, username) == 0) {
+        // token in cache and not expired
         pwd = getpwnam(username);
+    } else {
+        pwd = pwd_from_token(argv[2], token_file_path);
     }
 
     res = setuid(pwd->pw_uid);

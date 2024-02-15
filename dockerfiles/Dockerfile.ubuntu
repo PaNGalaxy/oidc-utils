@@ -2,9 +2,9 @@ FROM ubuntu:20.04 AS package
 
 RUN apt-get update && apt-get install -y cmake libpam0g-dev libcurl4-openssl-dev libssl-dev vim
 
-COPY c  /src/c
+COPY /src  /src
 
-WORKDIR /src/c
+WORKDIR /src
 RUN bash ./build.sh DEB
 
 FROM ubuntu:20.04 AS no2fa
@@ -17,16 +17,14 @@ RUN mkdir /run/sshd /etc/security/oidc
 RUN apt-get update && apt-get install -y curl python3 ssh
 
 
-COPY --from=package /src/c/build/*.deb  /package/
+COPY --from=package /src/build/*.deb  /package/
 
 RUN dpkg -i /package/oidc-pam-0.3.0-Linux.deb
 
-COPY c/sshd /etc/pam.d/
-COPY sshd_pam.conf /etc/ssh/sshd_config.d/
-COPY start_no2fa.sh  /tmp/oidc/
-COPY update_oidc_config.py  /tmp/oidc/
-COPY oidc-pam.json  /tmp/oidc/
-
+COPY config/sshd /etc/pam.d/
+COPY config/sshd_pam.conf /etc/ssh/sshd_config.d/
+COPY dockerfiles/start_no2fa.sh  /tmp/oidc/
+COPY config/oidc-pam.json  /tmp/oidc/
 
 EXPOSE 22
 
