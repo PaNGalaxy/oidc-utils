@@ -1,4 +1,4 @@
-FROM ubuntu:20.04 AS package
+FROM ubuntu:22.04 AS package
 
 RUN apt-get update && apt-get install -y cmake libpam0g-dev libcurl4-openssl-dev libssl-dev vim
 
@@ -7,7 +7,7 @@ COPY /src  /src
 WORKDIR /src
 RUN bash ./build.sh DEB
 
-FROM ubuntu:20.04 AS no2fa
+FROM ubuntu:22.04 AS no2fa
 
 RUN useradd test
 RUN mkhomedir_helper test
