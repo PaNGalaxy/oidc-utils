@@ -1,4 +1,4 @@
-FROM ubuntu:20.04 AS package
+FROM ubuntu:22.04 AS package
 
 RUN apt-get update && apt-get install -y cmake libpam0g-dev libcurl4-openssl-dev libssl-dev vim
 
@@ -7,7 +7,7 @@ COPY /src  /src
 WORKDIR /src
 RUN bash ./build.sh DEB
 
-FROM ubuntu:20.04 AS no2fa
+FROM ubuntu:22.04 AS no2fa
 
 RUN useradd test
 RUN mkhomedir_helper test
@@ -19,7 +19,7 @@ RUN apt-get update && apt-get install -y curl python3 ssh
 
 COPY --from=package /src/build/*.deb  /package/
 
-RUN dpkg -i /package/oidc-pam-0.3.0-Linux.deb
+RUN dpkg -i /package/oidc-pam-0.4.0-Linux.deb
 
 COPY config/sshd /etc/pam.d/
 COPY config/sshd_pam.conf /etc/ssh/sshd_config.d/
