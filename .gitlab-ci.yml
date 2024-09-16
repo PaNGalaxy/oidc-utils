@@ -2,8 +2,8 @@ stages:
     - build
 
 variables:
-    NO2FA_URL: "${CI_REGISTRY_IMAGE}/ubuntu_sshd"
-    WITH2FA_URL:   "${CI_REGISTRY_IMAGE}/opensuse_sshd_2fa"
+    NO2FA_URL: "${NDIP_DOCKER_REPOSITORY}/${CI_PROJECT_PATH}/ubuntu_sshd"
+    WITH2FA_URL:   "${NDIP_DOCKER_REPOSITORY}/${CI_PROJECT_PATH}/opensuse_sshd_2fa"
 
 before_script:
     - curl https://code.ornl.gov/rse-deployment/rse-sharables/raw/master/rse-bash-modules.sh -O
@@ -18,10 +18,9 @@ after_script:
 
 build-docker:
     variables:
-        IMAGE_PREFIX: "/$CI_COMMIT_REF_NAME"
+        IMAGE_PREFIX: "/build-$CI_COMMIT_REF_NAME"
     stage: build
     script:
-        - docker login --username=$CI_REGISTRY_USER --password=$CI_REGISTRY_PASSWORD $CI_REGISTRY
         - if [ $CI_COMMIT_REF_NAME == "main" ]; then export IMAGE_PREFIX=""; fi
         - docker build -f dockerfiles/Dockerfile.ubuntu -t no2fa --target no2fa .
         - docker build -f dockerfiles/Dockerfile.opensuse -t with2fa --target with2fa .
