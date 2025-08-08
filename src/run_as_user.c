@@ -4,6 +4,7 @@
 
 #include <stdlib.h>
 #include <pwd.h>
+#include <grp.h>
 #include <unistd.h>
 #include <sys/fcntl.h>
 #include <openssl/sha.h>
@@ -134,6 +135,12 @@ int main(int argc, char *argv[]) {
     } else {
         pwd = pwd_from_token(argv[2], token_file_path);
     }
+
+    if (initgroups(pwd->pw_name, pwd->pw_gid) != 0) {
+        printf("initgroup\n");
+        exit(1);
+    }
+
 
     res = setuid(pwd->pw_uid);
     if (res != 0) {
